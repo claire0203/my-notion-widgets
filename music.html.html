@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pastel Blue LP Player</title>
+<style>
+  :root {
+    --bg-color: transparent;
+    --card-bg: #D7E8F7; /* 파스텔 블루 */
+    --text-color: #455A64;
+    --accent-color: #90CAF9;
+    --tonearm-color: #546E7A;
+    --shadow: 0 10px 30px rgba(69, 90, 100, 0.15);
+    /* 트렌디한 산세리프 폰트 */
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--font-stack);
+  }
+
+  .player-card {
+    background: var(--card-bg);
+    width: 300px;
+    padding: 35px 20px 25px 20px;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden; 
+  }
+  
+  .player-card:active {
+    transform: scale(0.99);
+  }
+
+  /* --- 리얼한 LP 디자인 --- */
+  .vinyl-wrapper {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background-color: #111;
+    background-image: 
+      linear-gradient(145deg, rgba(255,255,255,0.15) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.05) 100%),
+      repeating-radial-gradient(circle at center, #222 0px, #222 1px, #111 2px, #111 3px);
+    box-shadow: 
+      0 8px 25px rgba(69, 90, 100, 0.3),
+      inset 0 0 15px rgba(0,0,0,0.8),
+      inset 0 0 2px 1px rgba(255,255,255,0.1);
+    margin-bottom: 25px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: spin 4s linear infinite;
+    animation-play-state: paused; 
+    z-index: 1;
+  }
+
+  .player-card.is-playing .vinyl-wrapper {
+    animation-play-state: running;
+  }
+
+  .center-label {
+    position: absolute;
+    width: 52px;
+    height: 52px;
+    background: #455A64;
+    border-radius: 50%;
+    z-index: 2;
+    border: 3px solid #37474F;
+    background-image: linear-gradient(to bottom right, rgba(255,255,255,0.1), transparent);
+  }
+
+  .center-hole {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #111;
+    border-radius: 50%;
+    z-index: 3;
+    border: 2px solid #555;
+  }
+
+  /* --- 움직이는 톤암 (바늘) --- */
+  .simple-tonearm {
+    position: absolute;
+    z-index: 10;
+    top: 30px;
+    right: 30px;
+    width: 80px;
+    height: 12px;
+    background: var(--tonearm-color);
+    border-radius: 10px; 
+    transform-origin: 90% 50%;
+    transform: rotate(-35deg);
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    pointer-events: none;
+  }
+
+  .player-card.is-playing .simple-tonearm {
+    transform: rotate(-5deg);
+  }
+
+  .simple-tonearm::after {
+    content: '';
+    position: absolute;
+    right: 5px;
+    top: -4px;
+    width: 20px;
+    height: 20px;
+    background: #455A64;
+    border-radius: 50%;
+    border: 2px solid #B0BEC5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  
+  .simple-tonearm::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    background: #37474F;
+    border-radius: 50%;
+  }
+
+  /* --- 텍스트 (트렌디한 폰트) --- */
+  .typewriter-container {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+
+  .typewriter-text {
+    font-family: var(--font-stack);
+    font-size: 16px;
+    font-weight: 800; /* 두껍게 */
+    color: var(--text-color);
+    letter-spacing: 0.15em; /* 자간 넓게 */
+    text-transform: uppercase;
+    
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 3px solid var(--accent-color);
+    width: 0;
+    
+    animation: 
+      reveal-erase-cycle 6s cubic-bezier(0.22, 0.61, 0.36, 1) infinite,
+      blink-caret .75s step-end infinite;
+  }
+
+  @keyframes reveal-erase-cycle {
+    0% { width: 0; }
+    30% { width: 190px; }
+    60% { width: 190px; }
+    85% { width: 0; }
+    100% { width: 0; }
+  }
+
+  @keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: var(--accent-color); }
+  }
+
+  .music-embed {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    pointer-events: auto; 
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(5px);
+  }
+
+  iframe {
+    width: 100%;
+    height: 150px; 
+    border: none;
+    display: block;
+  }
+
+  @keyframes spin {
+    100% { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="player-card" id="playerCard">
+  
+  <div class="simple-tonearm"></div>
+
+  <div class="vinyl-wrapper">
+    <div class="center-label"></div>
+    <div class="center-hole"></div>
+  </div>
+
+  <div class="typewriter-container">
+    <div class="typewriter-text">NOW PLAYING...</div>
+  </div>
+
+  <div class="music-embed">
+  <iframe allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" frameborder="0" height="175" style="width:100%;max-width:660px;overflow:hidden;border-radius:10px;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/kr/song/not-cute-anymore/1849105517"></iframe>
+    </div>
+</div>
+
+<script>
+  const playerCard = document.getElementById('playerCard');
+  playerCard.addEventListener('click', function() {
+    playerCard.classList.toggle('is-playing');
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pastel Blue Guestbook V2</title>
+<style>
+  /* --- 디자인 테마 (스케줄러와 동일) --- */
+  :root {
+    --bg-color: transparent;
+    --card-bg: #D7E8F7; /* 파스텔 블루 */
+    --text-color: #455A64;
+    --accent-color: #90CAF9;
+    --accent-dark: #64B5F6;
+    --shadow: 0 10px 30px rgba(69, 90, 100, 0.15);
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; 
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px 0;
+    font-family: var(--font-stack);
+    color: var(--text-color);
+    box-sizing: border-box;
+  }
+
+  .guestbook-card {
+    background: var(--card-bg);
+    width: 380px;
+    padding: 30px;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    position: relative;
+    max-height: 90vh;
+  }
+
+  .loading-indicator {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 12px;
+    color: var(--text-color);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-weight: bold;
+  }
+  .loading-indicator.error { color: #e57373; }
+  .loading-indicator.show { opacity: 0.8; }
+
+  .card-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin: 0 0 20px 0;
+    text-align: center;
+  }
+
+  .input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 25px;
+  }
+
+  .gb-input {
+    padding: 12px;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    background: #f9f9f9;
+    font-family: var(--font-stack);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .gb-input:focus { border-color: var(--accent-color); }
+  
+  textarea.gb-input { resize: none; height: 60px; }
+
+  #submitBtn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 15px;
+    transition: background 0.2s;
+  }
+  #submitBtn:hover { background: var(--accent-dark); }
+  #submitBtn:disabled { background: #ccc; cursor: not-allowed; }
+
+  #messageList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+    -ms-overflow-style: none; 
+    scrollbar-width: none;
+  }
+  #messageList::-webkit-scrollbar { display: none; }
+
+  .message-item {
+    background: #f5f7fa;
+    padding: 15px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    animation: fadeIn 0.3s ease-in-out;
+    position: relative; /* 버튼 배치를 위해 */
+  }
+
+  .msg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-right: 40px; /* 버튼 공간 확보 */
+  }
+
+  .msg-name { font-weight: 700; font-size: 15px; color: #37474F; }
+  .msg-date { font-size: 12px; color: #90A4AE; }
+
+  .msg-content {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-color);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* --- 수정/삭제 버튼 스타일 --- */
+  .msg-controls {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .control-btn {
+    cursor: pointer;
+    font-size: 14px;
+    color: #CFD8DC; /* 기본은 흐리게 */
+    transition: color 0.2s;
+  }
+
+  .btn-edit:hover { color: #64B5F6; } /* 수정: 파랑 */
+  .btn-delete:hover { color: #ff8a80; } /* 삭제: 빨강 */
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="guestbook-card">
+  <div class="loading-indicator" id="loadingIndicator">Connecting...</div>
+  <h2 class="card-title">GUESTBOOK</h2>
+
+  <div class="input-area">
+    <input type="text" id="nameInput" class="gb-input" placeholder="이름 (Name)" maxlength="20">
+    <textarea id="messageInput" class="gb-input" placeholder="메시지를 남겨주세요 (Message)"></textarea>
+    <button id="submitBtn">남기기 (Post)</button>
+  </div>
+
+  <ul id="messageList"></ul>
+</div>
+
+<script>
+  // =======================================================
+  // [필수] 아까 만든 방명록용 정보를 넣으세요!
+  
+  // 1. 방명록용 Bin ID
+  const GUESTBOOK_BIN_ID = "693ec54bae596e708f996af3"; 
+  
+  // 2. API Key
+  const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
+  // =======================================================
+
+  const API_URL = `https://api.jsonbin.io/v3/b/${GUESTBOOK_BIN_ID}`;
+  let messagesData = []; 
+
+  const nameInput = document.getElementById('nameInput');
+  const messageInput = document.getElementById('messageInput');
+  const submitBtn = document.getElementById('submitBtn');
+  const messageList = document.getElementById('messageList');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+
+  function init() {
+    loadMessages();
+    submitBtn.addEventListener('click', addMessage);
+  }
+
+  function showLoading(show, message = "Loading...") {
+    loadingIndicator.classList.toggle('show', show);
+    if (message.includes("Error")) {
+      loadingIndicator.classList.add('error');
+    } else {
+      loadingIndicator.classList.remove('error');
+    }
+    loadingIndicator.textContent = message;
+    submitBtn.disabled = show;
+  }
+
+  // --- Read ---
+  function loadMessages() {
+    showLoading(true, "Loading...");
+    fetch(API_URL, {
+      method: 'GET',
+      headers: { 'X-Master-Key': API_KEY }
+    })
+    .then(r => {
+      if (!r.ok) throw new Error("Auth/Network Error");
+      return r.json();
+    })
+    .then(result => {
+      messagesData = Array.isArray(result.record) ? result.record : [];
+      renderMessages();
+      showLoading(false);
+    })
+    .catch(e => { 
+      console.error(e);
+      showLoading(true, "Error! (키 확인)");
+    });
+  }
+
+  // --- Write (Update Server) ---
+  function saveMessages() {
+    showLoading(true, "Saving...");
+    fetch(API_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY
+      },
+      body: JSON.stringify(messagesData),
+    })
+    .then(r => {
+      if (!r.ok) throw new Error("Save Failed");
+      return r.json();
+    })
+    .then(data => {
+      renderMessages();
+      showLoading(false);
+      nameInput.value = '';
+      messageInput.value = '';
+    })
+    .catch(e => {
+      console.error(e);
+      showLoading(true, "Error! (저장 실패)");
+    });
+  }
+
+  // --- Create ---
+  function addMessage() {
+    const name = nameInput.value.trim();
+    const message = messageInput.value.trim();
+    if (name === '' || message === '') { alert("내용을 입력해주세요!"); return; }
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear().toString().slice(2)}. ${String(now.getMonth()+1).padStart(2,'0')}. ${String(now.getDate()).padStart(2,'0')}`;
+
+    const newMessage = {
+      name: name,
+      content: message,
+      date: dateStr,
+      id: Date.now()
+    };
+
+    messagesData.unshift(newMessage);
+    saveMessages();
+  }
+
+  // --- Delete ---
+  function deleteMessage(id) {
+    if(!confirm("정말 이 메시지를 삭제할까요?")) return;
+    
+    // 해당 ID를 가진 메시지 제외하고 다시 배열 만듦
+    messagesData = messagesData.filter(msg => msg.id !== id);
+    saveMessages();
+  }
+
+  // --- Edit ---
+  function editMessage(id) {
+    const msg = messagesData.find(m => m.id === id);
+    if (!msg) return;
+
+    // 간단하게 브라우저 기본 입력창(Prompt) 사용
+    const newContent = prompt("메시지를 수정해주세요:", msg.content);
+    
+    // 취소 누르거나 빈 내용이면 무시
+    if (newContent === null || newContent.trim() === "") return;
+
+    msg.content = newContent; // 내용 업데이트
+    saveMessages(); // 저장
+  }
+
+  // --- Render ---
+  function renderMessages() {
+    messageList.innerHTML = '';
+    if (messagesData.length === 0) {
+      messageList.innerHTML = '<li style="text-align:center; color:#aaa; padding:20px;">남겨진 메시지가 없습니다.<br>첫 글을 남겨보세요! 💙</li>';
+      return;
+    }
+    
+    messagesData.forEach(msg => {
+      const li = document.createElement('li');
+      li.className = 'message-item';
+      
+      // HTML 구성
+      li.innerHTML = `
+        <div class="msg-controls">
+           <span class="control-btn btn-edit" title="수정">✎</span>
+           <span class="control-btn btn-delete" title="삭제">✕</span>
+        </div>
+        <div class="msg-header">
+          <span class="msg-name">${msg.name}</span>
+          <span class="msg-date">${msg.date}</span>
+        </div>
+        <div class="msg-content">${msg.content}</div>
+      `;
+
+      // 이벤트 리스너 연결 (수정/삭제 버튼)
+      const editBtn = li.querySelector('.btn-edit');
+      const delBtn = li.querySelector('.btn-delete');
+      
+      editBtn.addEventListener('click', () => editMessage(msg.id));
+      delBtn.addEventListener('click', () => deleteMessage(msg.id));
+      
+      messageList.appendChild(li);
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>

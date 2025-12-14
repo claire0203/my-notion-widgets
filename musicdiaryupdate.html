@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MUSIC DIARY</title>
+<style>
+  /* --- 디자인 테마: Kitsch & Pastel Blue --- */
+  :root {
+    --bg-color: transparent;
+    --card-bg: #D7E8F7; /* 파스텔 블루 */
+    --paper-bg: #ffffff;
+    --text-color: #455A64;
+    --accent-color: #90CAF9;
+    --accent-dark: #64B5F6;
+    --edit-color: #81C784; /* 수정 버튼색 (파스텔 그린) */
+    --del-color: #FF8A80; /* 삭제 버튼색 (파스텔 레드) */
+    --shadow: 0 10px 30px rgba(69, 90, 100, 0.15);
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; 
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px 0;
+    font-family: var(--font-stack);
+    color: var(--text-color);
+    box-sizing: border-box;
+  }
+
+  /* 메인 카드 (모눈종이 다이어리) */
+  .diary-card {
+    background-color: var(--card-bg);
+    /* 키치한 모눈 패턴 */
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
+    
+    width: 100%;
+    max-width: 420px;
+    padding: 30px;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 600px; 
+  }
+
+  /* 바인더 링 Decoration */
+  .binder-rings {
+    position: absolute;
+    left: 12px;
+    top: 40px;
+    bottom: 40px;
+    width: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .ring {
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    border: 2px solid #BDD7EE;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .card-title {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 0 0 25px 0;
+    text-align: center;
+    padding-left: 20px;
+    color: #fff;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+  }
+
+  /* --- 입력 영역 (반투명 포스트잇 느낌) --- */
+  .input-area {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(5px);
+    padding: 15px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 25px;
+    margin-left: 20px;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  }
+
+  .date-picker {
+    padding: 10px; border: 2px solid #fff; border-radius: 10px;
+    font-family: var(--font-stack); color: var(--text-color); outline: none; font-weight: 600;
+    background: #E3F2FD;
+  }
+
+  .diary-input {
+    padding: 12px; border: 2px solid #fff; border-radius: 10px;
+    background: #fff; font-family: var(--font-stack); font-size: 14px; outline: none;
+    transition: 0.2s;
+  }
+  .diary-input:focus { border-color: var(--accent-color); background: #FAFBFD; }
+  
+  .embed-input { font-family: monospace; font-size: 11px; color: #888; }
+
+  /* 버튼 그룹 */
+  .btn-group { display: flex; gap: 8px; }
+  
+  button.main-btn {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    cursor: pointer; font-weight: 800; color: white; transition: transform 0.1s;
+    font-size: 14px;
+  }
+  button.main-btn:active { transform: scale(0.98); }
+
+  #saveBtn { background: var(--accent-color); flex: 2; }
+  #saveBtn:hover { background: var(--accent-dark); }
+  
+  #cancelBtn { background: #CFD8DC; flex: 1; display: none; }
+  #cancelBtn:hover { background: #B0BEC5; }
+
+  /* --- 리스트 영역 --- */
+  #diaryList { list-style: none; padding: 0; margin: 0; margin-left: 20px; flex-grow: 1; }
+
+  /* 개별 다이어리 엔트리 (종이 질감) */
+  .diary-entry {
+    background: var(--paper-bg);
+    padding: 20px;
+    border-radius: 4px;
+    margin-bottom: 25px;
+    box-shadow: 2px 4px 10px rgba(0,0,0,0.05);
+    position: relative;
+    animation: slideIn 0.3s ease-out;
+    border: 1px solid #eee;
+  }
+
+  /* 마스킹 테이프 효과 */
+  .diary-entry::before {
+    content: '';
+    position: absolute;
+    top: -10px; left: 50%;
+    transform: translateX(-50%) rotate(-1.5deg);
+    width: 90px; height: 24px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-left: 2px dashed rgba(0,0,0,0.1);
+    border-right: 2px dashed rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 1;
+  }
+
+  .entry-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 2px dashed #E0F2F1;
+  }
+
+  .entry-date-group { display: flex; align-items: center; gap: 8px; }
+
+  .date-sticker {
+    background: #FFECB3; padding: 2px 6px; border-radius: 4px;
+    font-size: 12px; font-weight: bold; color: #FF6F00;
+    transform: rotate(-3deg);
+  }
+
+  .entry-date { font-weight: 700; font-size: 14px; color: #546E7A; }
+
+  /* 수정/삭제 버튼 (텍스트형) */
+  .action-links { display: flex; gap: 10px; font-size: 12px; font-weight: bold; }
+  .act-btn { cursor: pointer; text-decoration: underline; transition: 0.2s; }
+  .act-edit { color: var(--edit-color); }
+  .act-del { color: var(--del-color); }
+  .act-btn:hover { opacity: 0.7; }
+
+  .entry-note {
+    font-size: 15px; line-height: 1.5; color: #455A64;
+    margin-bottom: 15px; white-space: pre-wrap;
+    background: #FAFAFA; padding: 10px; border-radius: 8px;
+  }
+
+  .entry-player {
+    width: 100%; border-radius: 12px; overflow: hidden;
+    background: #f0f0f0; border: 4px solid #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  .entry-player iframe { width: 100% !important; border: none !important; display: block; }
+
+  /* 페이지네이션 */
+  .pagination-controls {
+    display: flex; justify-content: center; align-items: center; gap: 15px;
+    margin-top: 20px; padding-left: 20px;
+  }
+  .page-btn {
+    background: #fff; border: 2px solid #D7E8F7; border-radius: 50%;
+    width: 36px; height: 36px; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; color: var(--accent-color); font-weight: bold; font-size: 18px;
+  }
+  .page-btn:hover { background: var(--accent-color); color: #fff; }
+  .page-btn:disabled { background: #eee; border-color: #eee; color: #ccc; cursor: default; }
+  .page-info { font-size: 14px; font-weight: 700; color: var(--text-color); }
+
+  #loadingIndicator {
+    position: absolute; top: 15px; right: 25px;
+    font-size: 12px; color: var(--text-color); opacity: 0; font-weight: 800;
+  }
+  #loadingIndicator.show { opacity: 0.7; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="diary-card">
+  <div id="loadingIndicator">Checking...</div>
+  
+  <div class="binder-rings">
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div>
+  </div>
+
+  <h2 class="card-title">MUSIC DIARY</h2>
+
+  <div class="input-area">
+    <input type="date" id="dateInput" class="date-picker">
+    <input type="text" id="noteInput" class="diary-input" placeholder="오늘의 감상평 (Comment)">
+    <input type="text" id="embedInput" class="diary-input embed-input" placeholder='애플뮤직 Embed Code (<iframe...)'>
+    
+    <div class="btn-group">
+      <button id="cancelBtn" class="main-btn">취소</button>
+      <button id="saveBtn" class="main-btn">기록하기 (Save)</button>
+    </div>
+  </div>
+
+  <ul id="diaryList"></ul>
+
+  <div class="pagination-controls">
+    <button id="prevBtn" class="page-btn">&lt;</button>
+    <span id="pageInfo" class="page-info">1 / 1</span>
+    <button id="nextBtn" class="page-btn">&gt;</button>
+  </div>
+</div>
+
+<script>
+  // =======================================================
+  // [필수] API KEY와 BIN ID를 다시 입력해주세요!
+  const DIARY_BIN_ID = "693edb14ae596e708f998cfa
+"; 
+  const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
+  // =======================================================
+
+  const API_URL = `https://api.jsonbin.io/v3/b/${DIARY_BIN_ID}`;
+  
+  let diaryData = [];
+  let isEditing = false;
+  let editId = null;
+
+  let currentPage = 1;
+  const itemsPerPage = 3;
+
+  // DOM
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const dateInput = document.getElementById('dateInput');
+  const noteInput = document.getElementById('noteInput');
+  const embedInput = document.getElementById('embedInput');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const diaryList = document.getElementById('diaryList');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const pageInfo = document.getElementById('pageInfo');
+
+  function init() {
+    dateInput.valueAsDate = new Date();
+    loadData();
+    
+    saveBtn.addEventListener('click', handleSave);
+    cancelBtn.addEventListener('click', resetForm);
+    prevBtn.addEventListener('click', () => changePage(-1));
+    nextBtn.addEventListener('click', () => changePage(1));
+  }
+
+  function showMsg(txt, show=true) {
+    loadingIndicator.textContent = txt;
+    loadingIndicator.classList.toggle('show', show);
+  }
+
+  // --- Read ---
+  async function loadData() {
+    showMsg("Loading...");
+    try {
+      const response = await fetch(API_URL + '/latest', {
+        method: 'GET',
+        headers: { 'X-Master-Key': API_KEY }
+      });
+      const data = await response.json();
+      diaryData = Array.isArray(data.record) ? data.record : [];
+      
+      currentPage = 1;
+      renderDiary();
+      showMsg("", false);
+    } catch (e) {
+      console.error(e);
+      showMsg("Error!");
+    }
+  }
+
+  // --- Create & Update ---
+  async function handleSave() {
+    const date = dateInput.value;
+    const note = noteInput.value.trim();
+    const embedCode = embedInput.value.trim();
+
+    if (!embedCode.startsWith('<iframe')) {
+      alert("⚠️ 애플뮤직 '임베드 코드(iframe)'만 입력 가능해요!\n(공유하기 -> 임베드 코드 복사)");
+      return;
+    }
+
+    showMsg(isEditing ? "Updating..." : "Saving...");
+
+    if (isEditing) {
+      const index = diaryData.findIndex(item => item.id === editId);
+      if (index !== -1) {
+        diaryData[index] = { ...diaryData[index], date, note, embed: embedCode };
+      }
+    } else {
+      const newEntry = {
+        id: Date.now(),
+        date: date,
+        note: note,
+        embed: embedCode
+      };
+      diaryData.unshift(newEntry);
+    }
+
+    try {
+      await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify(diaryData),
+      });
+      resetForm();
+      renderDiary();
+      showMsg("Done!", true);
+      setTimeout(() => showMsg("", false), 2000);
+    } catch (e) {
+      console.error(e);
+      showMsg("Save Error!");
+    }
+  }
+
+  // --- Edit Mode ---
+  window.startEdit = function(id) {
+    const item = diaryData.find(e => e.id === id);
+    if (!item) return;
+
+    dateInput.value = item.date;
+    noteInput.value = item.note;
+    embedInput.value = item.embed;
+
+    isEditing = true;
+    editId = id;
+
+    saveBtn.textContent = "수정 완료 (Update)";
+    saveBtn.style.background = "#81C784"; // 파스텔 그린
+    cancelBtn.style.display = "block";
+    
+    // 입력창으로 스크롤 이동
+    document.querySelector('.input-area').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // --- Delete ---
+  window.deleteEntry = function(id) {
+    if (!confirm("정말 이 페이지를 찢어버릴까요? (삭제)")) return;
+    
+    diaryData = diaryData.filter(e => e.id !== id);
+    showMsg("Deleting...");
+    
+    fetch(API_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+      body: JSON.stringify(diaryData),
+    }).then(() => {
+      renderDiary();
+      showMsg("", false);
+      if (isEditing && editId === id) resetForm();
+    });
+  }
+
+  function resetForm() {
+    dateInput.valueAsDate = new Date();
+    noteInput.value = '';
+    embedInput.value = '';
+    
+    isEditing = false;
+    editId = null;
+
+    saveBtn.textContent = "기록하기 (Save)";
+    saveBtn.style.background = ""; 
+    cancelBtn.style.display = "none";
+  }
+
+  // --- Render ---
+  function renderDiary() {
+    diaryList.innerHTML = '';
+    
+    if (diaryData.length === 0) {
+      diaryList.innerHTML = '<li style="text-align:center; color:#888; padding:30px;">아직 기록된 음악이 없어요. 🎵</li>';
+      pageInfo.textContent = "0 / 0";
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      return;
+    }
+
+    const totalPages = Math.ceil(diaryData.length / itemsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageData = diaryData.slice(start, end);
+
+    const stickers = ['🎧', '💿', '🎹', '🎸', '🎤', '🎼', '☁️', '💙'];
+
+    pageData.forEach((entry) => {
+      const li = document.createElement('li');
+      li.className = 'diary-entry';
+      
+      const dateObj = new Date(entry.date);
+      const dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+      const sticker = stickers[dateObj.getDate() % stickers.length];
+
+      li.innerHTML = `
+        <div class="entry-header">
+          <div class="entry-date-group">
+            <span class="date-sticker">${sticker}</span>
+            <span class="entry-date">${dateStr}</span>
+          </div>
+          <div class="action-links">
+            <span class="act-btn act-edit" onclick="startEdit(${entry.id})">EDIT</span>
+            <span class="act-btn act-del" onclick="deleteEntry(${entry.id})">DEL</span>
+          </div>
+        </div>
+        ${entry.note ? `<div class="entry-note">${entry.note}</div>` : ''}
+        <div class="entry-player">
+          ${entry.embed} 
+        </div>
+      `;
+      diaryList.appendChild(li);
+    });
+
+    pageInfo.textContent = `${currentPage} / ${totalPages}`;
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+  }
+
+  function changePage(step) {
+    currentPage += step;
+    renderDiary();
+  }
+
+  init();
+</script>
+</body>
+</html>

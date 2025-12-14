@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MUSIC DIARY</title>
+<style>
+  /* --- Theme: Modern & Hip Timeline --- */
+  :root {
+    --bg-color: transparent;
+    --line-color: #B3E5FC; /* 타임라인 선 색상 */
+    --accent-color: #29B6F6; /* 강조색 (진한 파스텔 블루) */
+    --text-main: #37474F;
+    --text-sub: #90A4AE;
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    
+    /* Font: 힙하고 깔끔한 산세리프/고딕 조합 */
+    --font-stack: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    margin: 0;
+    padding: 20px;
+    font-family: var(--font-stack);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 450px;
+    position: relative;
+  }
+
+  /* 1. Header */
+  h1 {
+    font-size: 26px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 30px;
+    letter-spacing: -0.5px;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  /* 2. Input Area (Modern Card) */
+  .input-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid #F0F4F8;
+  }
+
+  .date-row { display: flex; gap: 10px; }
+  
+  input, textarea {
+    border: 1px solid #E0E0E0;
+    border-radius: 12px;
+    padding: 12px;
+    font-family: var(--font-stack);
+    font-size: 14px;
+    background: #FAFAFA;
+    outline: none;
+    transition: 0.2s;
+  }
+  input:focus, textarea:focus {
+    border-color: var(--accent-color);
+    background: #fff;
+  }
+  
+  input[type="date"], input[type="time"] { flex: 1; font-weight: 600; color: var(--text-main); }
+  
+  .embed-input { font-family: monospace; font-size: 11px; color: #888; }
+
+  .btn-group { display: flex; gap: 10px; margin-top: 5px; }
+  
+  button {
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 15px;
+    transition: transform 0.1s;
+  }
+  button:active { transform: scale(0.98); }
+
+  #saveBtn { background: var(--text-main); color: #fff; flex: 2; } 
+  #cancelBtn { background: #ECEFF1; color: var(--text-sub); flex: 1; display: none; }
+
+
+  /* 3. Timeline Structure */
+  .timeline {
+    position: relative;
+    padding-left: 30px; /* 선 공간 확보 */
+  }
+
+  /* 수직 선 (Unified Line) */
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 10px; /* 선 위치 */
+    width: 3px;
+    background: var(--line-color);
+    border-radius: 2px;
+  }
+
+  /* 4. Timeline Item (Accordion) */
+  .t-item {
+    position: relative;
+    margin-bottom: 25px;
+    animation: fadeInUp 0.4s ease;
+  }
+
+  /* 타임라인 점 (Node) */
+  .t-dot {
+    position: absolute;
+    left: -26px; /* 선 위에 위치 */
+    top: 15px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border: 4px solid var(--accent-color);
+    border-radius: 50%;
+    z-index: 2;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.5); /* 빛나는 효과 */
+  }
+
+  /* 헤더 (항상 보임) - 클릭 시 펼쳐짐 */
+  .t-header {
+    background: var(--card-bg);
+    padding: 15px 20px;
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+    border: 1px solid rgba(255,255,255,0.5);
+    backdrop-filter: blur(10px);
+  }
+  .t-header:hover { background: #F1F8FF; }
+
+  .t-date-info { display: flex; flex-direction: column; }
+  
+  .t-date {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+  }
+  
+  .t-time {
+    font-size: 13px;
+    color: var(--accent-color);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .t-icon { font-size: 20px; opacity: 0.8; }
+
+  /* 내용 (펼쳐지는 부분) */
+  .t-content {
+    background: #fff;
+    margin-top: -10px; /* 헤더랑 연결된 느낌 */
+    padding: 25px 20px 20px 20px;
+    border-radius: 0 0 18px 18px;
+    box-shadow: var(--shadow);
+    display: none; /* 기본 숨김 */
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .t-item.active .t-content { display: flex; }
+  .t-item.active .t-header { 
+    border-radius: 18px 18px 0 0; 
+    background: #F1F8FF;
+  }
+  .t-item.active .t-dot { background: var(--accent-color); } /* 활성화 시 점 색 변경 */
+
+  .t-note {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #546E7A;
+    white-space: pre-wrap;
+    padding: 10px;
+    background: #FAFAFA;
+    border-radius: 10px;
+  }
+
+  .t-player {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .t-player iframe { width: 100% !important; border: none; display: block; }
+
+  /* Actions */
+  .t-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 5px;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+  }
+  
+  .act-btn {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-edit { background: #E3F2FD; color: #1976D2; }
+  .btn-del { background: #FFEBEE; color: #D32F2F; }
+
+  /* 로딩 표시 */
+  #loading {
+    text-align: center; color: var(--text-sub); font-size: 13px;
+    margin-bottom: 20px; opacity: 0; transition: opacity 0.3s;
+  }
+  #loading.show { opacity: 1; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎧 MUSIC DIARY</h1>
+  
+  <div id="loading">Updating timeline...</div>
+
+  <div class="input-card">
+    <div class="date-row">
+      <input type="date" id="dateInput">
+      <input type="time" id="timeInput">
+    </div>
+    <input type="text" id="noteInput" placeholder="Music Note (감상평)">
+    <input type="text" id="embedInput" class="embed-input" placeholder='애플뮤직 Embed Code (<iframe...)'>
+    
+    <div class="btn-group">
+      <button id="cancelBtn">취소</button>
+      <button id="saveBtn">RECORD</button>
+    </div>
+  </div>
+
+  <div class="timeline" id="timelineList">
+    </div>
+</div>
+
+<script>
+  // 🔒 API 설정 (새로운 Bin ID를 넣으세요!)
+  const BIN_ID = "693f017cae596e708f99ccef"; 
+  const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
+  // ===========================================
+
+  const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+  
+  let musicData = [];
+  let isEditing = false;
+  let editId = null;
+
+  // DOM
+  const loading = document.getElementById('loading');
+  const dateInput = document.getElementById('dateInput');
+  const timeInput = document.getElementById('timeInput');
+  const noteInput = document.getElementById('noteInput');
+  const embedInput = document.getElementById('embedInput');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const timelineList = document.getElementById('timelineList');
+
+  function init() {
+    // 1. 날짜/시간 초기화 (현재 시간)
+    const now = new Date();
+    dateInput.valueAsDate = now;
+    timeInput.value = now.toTimeString().substring(0, 5); // HH:mm
+
+    loadData();
+
+    saveBtn.addEventListener('click', handleSave);
+    cancelBtn.addEventListener('click', resetForm);
+  }
+
+  function showMsg(txt, show=true) {
+    loading.textContent = txt;
+    loading.classList.toggle('show', show);
+  }
+
+  // --- Read ---
+  async function loadData() {
+    showMsg("Loading Timeline...");
+    try {
+      const res = await fetch(API_URL + '/latest', {
+        headers: { 'X-Master-Key': API_KEY }
+      });
+      const data = await res.json();
+      musicData = Array.isArray(data.record) ? data.record : [];
+      renderTimeline();
+      showMsg("", false);
+    } catch (e) {
+      console.error(e);
+      showMsg("Failed to load.");
+    }
+  }
+
+  // --- Save / Update ---
+  async function handleSave() {
+    const date = dateInput.value;
+    const time = timeInput.value;
+    const note = noteInput.value.trim();
+    const embedCode = embedInput.value.trim();
+
+    if (!embedCode.startsWith('<iframe')) {
+      alert("⚠️ 애플뮤직 '임베드 코드(iframe)'를 입력해주세요!");
+      return;
+    }
+
+    showMsg("Saving...");
+
+    if (isEditing) {
+      const idx = musicData.findIndex(item => item.id === editId);
+      if (idx !== -1) {
+        musicData[idx] = { ...musicData[idx], date, time, note, embed: embedCode };
+      }
+    } else {
+      const newItem = {
+        id: Date.now(),
+        date, time, note, 
+        embed: embedCode
+      };
+      // 타임라인은 최신순 (맨 위)
+      musicData.unshift(newItem);
+    }
+
+    await updateServer();
+    resetForm();
+  }
+
+  // --- Delete ---
+  window.deleteEntry = async function(id) {
+    if(!confirm("이 기록을 삭제하시겠습니까?")) return;
+    musicData = musicData.filter(item => item.id !== id);
+    showMsg("Deleting...");
+    await updateServer();
+  }
+
+  // --- Server Update ---
+  async function updateServer() {
+    try {
+      await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify({ record: musicData }),
+      });
+      renderTimeline();
+      showMsg("Done!", true);
+      setTimeout(() => showMsg("", false), 1500);
+    } catch (e) {
+      console.error(e);
+      showMsg("Error saving.");
+    }
+  }
+
+  // --- Edit Mode ---
+  window.startEdit = function(id) {
+    const item = musicData.find(i => i.id === id);
+    if(!item) return;
+
+    dateInput.value = item.date;
+    timeInput.value = item.time || "00:00";
+    noteInput.value = item.note;
+    embedInput.value = item.embed;
+
+    isEditing = true;
+    editId = id;
+
+    saveBtn.textContent = "UPDATE";
+    saveBtn.style.background = "#29B6F6"; // Accent Color
+    cancelBtn.style.display = "block";
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    const now = new Date();
+    dateInput.valueAsDate = now;
+    timeInput.value = now.toTimeString().substring(0, 5);
+    noteInput.value = '';
+    embedInput.value = '';
+    
+    isEditing = false;
+    editId = null;
+    
+    saveBtn.textContent = "RECORD";
+    saveBtn.style.background = "var(--text-main)";
+    cancelBtn.style.display = "none";
+  }
+
+  // --- Toggle Accordion ---
+  window.toggleAccordion = function(element) {
+    // 클릭한 요소의 부모(.t-item)를 찾음
+    const item = element.closest('.t-item');
+    item.classList.toggle('active');
+  }
+
+  // --- Render ---
+  function renderTimeline() {
+    timelineList.innerHTML = '';
+
+    if (musicData.length === 0) {
+      timelineList.innerHTML = '<div style="text-align:center; color:#ccc; padding:20px;">No music records yet.</div>';
+      return;
+    }
+
+    // 날짜별 이모지 (랜덤 대신 순서대로 or 분위기 맞춰서)
+    const icons = ['🎵', '🎧', '🎹', '🎸', '💿', '🎼', '🎙️'];
+
+    musicData.forEach((item, index) => {
+      const dateObj = new Date(item.date);
+      // 포맷: 2025.12.15
+      const dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+      const timeStr = item.time || ""; 
+      const icon = icons[index % icons.length];
+
+      const div = document.createElement('div');
+      div.className = 't-item';
+      div.innerHTML = `
+        <div class="t-dot"></div>
+        
+        <div class="t-header" onclick="toggleAccordion(this)">
+          <div class="t-date-info">
+            <span class="t-date">${dateStr}</span>
+            <span class="t-time">${timeStr}</span>
+          </div>
+          <div class="t-icon">${icon}</div>
+        </div>
+
+        <div class="t-content">
+          ${item.note ? `<div class="t-note">${item.note}</div>` : ''}
+          <div class="t-player">
+            ${item.embed}
+          </div>
+          <div class="t-actions">
+            <button class="act-btn btn-edit" onclick="startEdit(${item.id})">EDIT</button>
+            <button class="act-btn btn-del" onclick="deleteEntry(${item.id})">DELETE</button>
+          </div>
+        </div>
+      `;
+      timelineList.appendChild(div);
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -3,21 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pastel Music Diary</title>
+<title>Kitsch Music Diary</title>
 <style>
-  /* --- 디자인 테마 (패밀리 룩) --- */
+  /* --- 디자인 테마 --- */
   :root {
     --bg-color: transparent;
     --card-bg: #D7E8F7; /* 파스텔 블루 */
-    --paper-bg: #ffffff; /* 일기장 종이 색 */
+    --paper-bg: #ffffff;
     --text-color: #455A64;
     --accent-color: #90CAF9;
     --accent-dark: #64B5F6;
     --shadow: 0 10px 30px rgba(69, 90, 100, 0.15);
-    /* UI 폰트 */
-    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    /* 일기 본문 폰트 (감성적인 명조/타자기 느낌) */
-    --font-diary: "KoPub Batang", "Times New Roman", serif;
+    /* 폰트: 전체 Sans-Serif 통일 */
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
   body {
@@ -28,31 +26,38 @@
     min-height: 100vh;
     margin: 0;
     padding: 20px 0;
-    font-family: var(--font-ui);
+    font-family: var(--font-stack);
     color: var(--text-color);
     box-sizing: border-box;
   }
 
-  /* 메인 카드 (바인더 느낌) */
+  /* 메인 카드 (모눈종이 다이어리 느낌) */
   .diary-card {
-    background: var(--card-bg);
-    width: 400px; /* 조금 더 넓게 */
+    background-color: var(--card-bg);
+    /* 키치한 모눈 패턴 배경 추가 */
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
+    
+    width: 400px;
     padding: 30px;
     border-radius: 24px;
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
     position: relative;
-    max-height: 90vh;
+    /* 높이 제한 없음 (페이지네이션으로 조절) */
+    min-height: 600px; 
   }
 
-  /* 왼쪽 바인더 구멍 장식 (디자인 요소) */
+  /* 왼쪽 바인더 링 */
   .binder-rings {
     position: absolute;
-    left: 15px;
+    left: 12px;
     top: 40px;
     bottom: 40px;
-    width: 10px;
+    width: 15px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -60,11 +65,12 @@
     pointer-events: none;
   }
   .ring {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     background: #fff;
     border-radius: 50%;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+    border: 2px solid #BDD7EE; /* 링 테두리 */
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
   }
 
   .loading-indicator {
@@ -74,58 +80,62 @@
     font-size: 12px;
     color: var(--text-color);
     opacity: 0;
-    font-weight: bold;
+    font-weight: 800;
   }
   .loading-indicator.show { opacity: 0.8; }
 
   .card-title {
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 900; /* 아주 두껍게 */
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    margin: 0 0 20px 0;
+    margin: 0 0 25px 0;
     text-align: center;
-    padding-left: 20px; /* 링 때문에 약간 오른쪽으로 */
+    padding-left: 20px;
+    color: #fff;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.1); /* 키치한 그림자 */
   }
 
-  /* --- 입력 영역 (접었다 폈다 가능하게 할 수도 있지만, 직관적으로 노출) --- */
+  /* --- 입력 영역 --- */
   .input-area {
-    background: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(5px);
     padding: 15px;
     border-radius: 16px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin-bottom: 25px;
-    margin-left: 15px; /* 링 공간 확보 */
+    margin-left: 20px; /* 링 공간 */
+    border: 2px solid #fff;
   }
 
   .date-picker {
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-family: var(--font-ui);
+    border: 2px solid #eee;
+    border-radius: 10px;
+    font-family: var(--font-stack);
     color: var(--text-color);
     outline: none;
+    font-weight: 600;
   }
 
   .diary-input {
     padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border: 2px solid #eee;
+    border-radius: 10px;
     background: #fff;
-    font-family: var(--font-ui);
+    font-family: var(--font-stack);
     font-size: 14px;
     outline: none;
     transition: border-color 0.2s;
   }
   .diary-input:focus { border-color: var(--accent-color); }
   
-  /* 임베드 코드 입력창은 좀 더 다르게 */
   .embed-input {
     font-family: monospace;
     font-size: 11px;
-    color: #666;
+    color: #888;
   }
 
   #addBtn {
@@ -135,83 +145,146 @@
     padding: 12px;
     border-radius: 12px;
     cursor: pointer;
-    font-weight: 700;
-    transition: background 0.2s;
+    font-weight: 800;
+    transition: transform 0.1s;
   }
-  #addBtn:hover { background: var(--accent-dark); }
+  #addBtn:hover { background: var(--accent-dark); transform: scale(1.02); }
 
 
-  /* --- 다이어리 리스트 영역 --- */
+  /* --- 다이어리 리스트 --- */
   #diaryList {
     list-style: none;
     padding: 0;
     margin: 0;
-    overflow-y: auto;
+    margin-left: 20px;
     flex-grow: 1;
-    -ms-overflow-style: none; 
-    scrollbar-width: none;
-    padding-left: 15px; /* 링 공간 */
   }
-  #diaryList::-webkit-scrollbar { display: none; }
 
-  /* 개별 일기장 페이지 (Entry) */
+  /* 개별 일기장 (폴라로이드/메모지 느낌) */
   .diary-entry {
     background: var(--paper-bg);
     padding: 20px;
-    border-radius: 4px 16px 16px 4px; /* 왼쪽은 직각, 오른쪽은 둥글게 (종이 느낌) */
-    margin-bottom: 20px;
-    box-shadow: 1px 2px 5px rgba(0,0,0,0.05);
+    border-radius: 4px; /* 각진 종이 느낌 */
+    margin-bottom: 25px;
+    box-shadow: 2px 4px 10px rgba(0,0,0,0.05);
     position: relative;
-    animation: slideIn 0.4s ease-out;
-    border-left: 4px solid rgba(0,0,0,0.05); /* 제본 부분 표현 */
+    animation: slideIn 0.3s ease-out;
+    border: 1px solid #eee;
+  }
+
+  /* 마스킹 테이프 효과 (CSS로 구현) */
+  .diary-entry::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    width: 80px;
+    height: 25px;
+    background-color: rgba(255, 255, 255, 0.6);
+    border-left: 2px dashed rgba(0,0,0,0.1);
+    border-right: 2px dashed rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 1;
   }
 
   .entry-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px dashed #ddd; /* 점선 밑줄 */
+    margin-bottom: 12px;
     padding-bottom: 8px;
-    margin-bottom: 15px;
+    border-bottom: 2px dashed #E0F2F1; /* 귀여운 점선 */
+  }
+
+  .entry-date-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .date-sticker {
+    background: #FFECB3;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #FF6F00;
+    transform: rotate(-3deg);
   }
 
   .entry-date {
-    font-family: var(--font-diary);
-    font-weight: bold;
-    font-size: 16px;
-    color: #37474F;
+    font-weight: 700;
+    font-size: 15px;
+    color: #546E7A;
   }
 
   .delete-btn {
     cursor: pointer;
     font-size: 18px;
-    color: #ddd;
-    line-height: 1;
+    color: #CFD8DC;
+    transition: color 0.2s;
   }
   .delete-btn:hover { color: #ff8a80; }
 
   .entry-note {
-    font-family: var(--font-diary);
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.5;
     color: #455A64;
     margin-bottom: 15px;
     white-space: pre-wrap;
+    background: #FAFAFA;
+    padding: 10px;
+    border-radius: 8px;
   }
 
-  /* 임베드된 플레이어 컨테이너 */
   .entry-player {
     width: 100%;
     border-radius: 12px;
     overflow: hidden;
     background: #f0f0f0;
+    border: 4px solid #fff; /* 사진 테두리 느낌 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
   }
   
-  /* 사용자가 넣은 iframe 스타일 강제 조정 */
   .entry-player iframe {
     width: 100% !important;
     border: none !important;
     display: block !important;
+  }
+
+  /* --- 페이지네이션 컨트롤 (New!) --- */
+  .pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    padding-left: 20px;
+  }
+
+  .page-btn {
+    background: #fff;
+    border: 2px solid #D7E8F7;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    color: var(--accent-color);
+    font-weight: bold;
+    font-size: 18px;
+    transition: all 0.2s;
+  }
+  .page-btn:hover { background: var(--accent-color); color: #fff; }
+  .page-btn:disabled { background: #eee; border-color: #eee; color: #ccc; cursor: not-allowed; }
+
+  .page-info {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-color);
   }
 
   @keyframes slideIn {
@@ -230,41 +303,54 @@
     <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div>
   </div>
 
-  <h2 class="card-title">Music Diary</h2>
+  <h2 class="card-title">MY MUSIC DIARY</h2>
 
   <div class="input-area">
     <input type="date" id="dateInput" class="date-picker">
-    <input type="text" id="noteInput" class="diary-input" placeholder="오늘의 감상평 (짧은 메모)">
-    <input type="text" id="embedInput" class="diary-input embed-input" placeholder='애플뮤직 "임베드 코드"를 붙여넣으세요 (&lt;iframe...&gt;)'>
-    <button id="addBtn">기록하기 (Record)</button>
+    <input type="text" id="noteInput" class="diary-input" placeholder="오늘의 감상평 (Comment)">
+    <input type="text" id="embedInput" class="diary-input embed-input" placeholder='애플뮤직 Embed Code 붙여넣기'>
+    <button id="addBtn">기록하기 (Save)</button>
   </div>
 
-  <ul id="diaryList">
-    </ul>
+  <ul id="diaryList"></ul>
+
+  <div class="pagination-controls">
+    <button id="prevBtn" class="page-btn">&lt;</button>
+    <span id="pageInfo" class="page-info">1 / 1</span>
+    <button id="nextBtn" class="page-btn">&gt;</button>
+  </div>
 </div>
 
 <script>
   // =======================================================
-  // [필수] 다이어리용 새 정보를 입력하세요! (대괄호 [] Bin)
-  
-  const DIARY_BIN_ID = "693ed144d0ea881f4028d337"; 
+  // [필수] 뮤직 다이어리용 BIN ID를 넣으세요! (대괄호 [])
+  const DIARY_BIN_ID = "693ed52743b1c97be9edc4dd"; 
   const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
   // =======================================================
 
   const API_URL = `https://api.jsonbin.io/v3/b/${DIARY_BIN_ID}`;
   let diaryData = [];
+  
+  // 페이지네이션 설정 (한 페이지에 3개씩)
+  let currentPage = 1;
+  const itemsPerPage = 3;
 
+  // DOM
   const loadingIndicator = document.getElementById('loadingIndicator');
   const dateInput = document.getElementById('dateInput');
   const noteInput = document.getElementById('noteInput');
   const embedInput = document.getElementById('embedInput');
   const diaryList = document.getElementById('diaryList');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const pageInfo = document.getElementById('pageInfo');
 
   function init() {
-    // 오늘 날짜 기본 설정
     dateInput.valueAsDate = new Date();
     loadData();
     document.getElementById('addBtn').addEventListener('click', addEntry);
+    prevBtn.addEventListener('click', () => changePage(-1));
+    nextBtn.addEventListener('click', () => changePage(1));
   }
 
   function showLoading(show, txt="Loading...") {
@@ -282,6 +368,7 @@
     .then(r => r.json())
     .then(data => {
       diaryData = Array.isArray(data.record) ? data.record : [];
+      currentPage = 1; // 로드 시 1페이지로 초기화
       renderDiary();
       showLoading(false);
     })
@@ -298,9 +385,8 @@
     })
     .then(r => r.json())
     .then(() => {
-      renderDiary();
+      renderDiary(); // 저장 후 다시 그리기
       showLoading(false);
-      // 입력창 초기화
       noteInput.value = '';
       embedInput.value = '';
     })
@@ -314,11 +400,10 @@
     const embedCode = embedInput.value.trim();
 
     if (!embedCode.startsWith('<iframe')) {
-      alert("올바른 '임베드 코드'가 아닙니다.\n애플뮤직 > 공유 > '임베드 코드 복사'를 해주세요!");
+      alert("올바른 애플뮤직 '임베드 코드'를 넣어주세요!");
       return;
     }
 
-    // 새 기록 생성
     const newEntry = {
       id: Date.now(),
       date: date,
@@ -326,38 +411,58 @@
       embed: embedCode
     };
 
-    // 최신순으로 앞에 추가
-    diaryData.unshift(newEntry);
+    diaryData.unshift(newEntry); // 맨 앞에 추가
+    currentPage = 1; // 새 글 쓰면 1페이지로 이동
     saveData();
   }
 
   // --- Delete ---
   window.deleteEntry = function(id) {
-    if (!confirm("이 기록을 찢어버릴까요? (삭제)")) return;
+    // 문구 수정됨: 정중하고 명확하게
+    if (!confirm("이 기록을 삭제할까요?")) return;
     diaryData = diaryData.filter(e => e.id !== id);
     saveData();
   }
 
-  // --- Render ---
+  // --- Render (Pagination Applied) ---
   function renderDiary() {
     diaryList.innerHTML = '';
     
     if (diaryData.length === 0) {
-      diaryList.innerHTML = '<li style="text-align:center; color:#888; padding:30px; font-size:14px;">아직 기록된 음악이 없습니다.<br>오늘의 BGM을 남겨보세요! 🎼</li>';
+      diaryList.innerHTML = '<li style="text-align:center; color:#888; padding:30px;">기록된 음악이 없습니다. 🎵</li>';
+      pageInfo.textContent = "0 / 0";
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
       return;
     }
 
-    diaryData.forEach(entry => {
+    // 페이지네이션 계산
+    const totalPages = Math.ceil(diaryData.length / itemsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageData = diaryData.slice(start, end);
+
+    // 랜덤 스티커 (재미 요소)
+    const stickers = ['🎧', '💿', '🎹', '🎸', '🎤', '🎼', '☁️', '💙'];
+
+    pageData.forEach((entry, index) => {
       const li = document.createElement('li');
       li.className = 'diary-entry';
       
-      // 날짜 포맷 예쁘게 (2023-10-27 -> 2023년 10월 27일)
       const dateObj = new Date(entry.date);
-      const dateStr = `${dateObj.getFullYear()}년 ${dateObj.getMonth()+1}월 ${dateObj.getDate()}일`;
+      const dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+      // 일기마다 고유한 느낌을 주기 위해 날짜(일)를 기준으로 스티커 선택
+      const sticker = stickers[dateObj.getDate() % stickers.length];
 
       li.innerHTML = `
         <div class="entry-header">
-          <span class="entry-date">${dateStr}</span>
+          <div class="entry-date-group">
+            <span class="date-sticker">${sticker}</span>
+            <span class="entry-date">${dateStr}</span>
+          </div>
           <span class="delete-btn" onclick="deleteEntry(${entry.id})">&times;</span>
         </div>
         ${entry.note ? `<div class="entry-note">${entry.note}</div>` : ''}
@@ -367,6 +472,16 @@
       `;
       diaryList.appendChild(li);
     });
+
+    // 페이지 컨트롤 업데이트
+    pageInfo.textContent = `${currentPage} / ${totalPages}`;
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+  }
+
+  function changePage(step) {
+    currentPage += step;
+    renderDiary();
   }
 
   init();

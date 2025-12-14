@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUSIC DIARY</title>
+    <style>
+        :root {
+            --bg-color: #F0F8FF;
+            --card-bg: #FFFFFF;
+            --accent-color: #89CFF0;
+            --accent-hover: #6CBFE0;
+            --text-main: #333333;
+            --text-sub: #8E8E93;
+            --shadow: 0 8px 24px rgba(149, 157, 165, 0.15);
+            --radius: 20px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 40px 20px;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .container { width: 100%; max-width: 500px; }
+
+        h1 {
+            text-align: center; font-size: 28px; font-weight: 800; letter-spacing: 2px;
+            margin-bottom: 30px; color: var(--text-main);
+        }
+
+        .input-card {
+            background: var(--card-bg); padding: 25px; border-radius: var(--radius);
+            box-shadow: var(--shadow); margin-bottom: 30px;
+        }
+
+        input {
+            width: 100%; padding: 14px; margin-bottom: 12px;
+            border: 1px solid #E5E5EA; border-radius: 12px; font-size: 15px;
+            background-color: #F9F9F9; box-sizing: border-box; outline: none;
+        }
+        input:focus { background-color: #FFF; border-color: var(--accent-color); }
+
+        /* 선택사항(커버 URL)은 조금 더 작게 표시 */
+        input#cover-url-input { font-size: 13px; color: #666; }
+
+        button {
+            width: 100%; padding: 15px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s;
+        }
+
+        #save-btn { background-color: var(--accent-color); color: white; margin-top: 5px; }
+        #save-btn:hover { background-color: var(--accent-hover); }
+        #cancel-btn { background-color: #F2F2F7; color: var(--text-sub); margin-top: 10px; display: none; }
+
+        .music-item {
+            background: var(--card-bg); border-radius: 18px; padding: 16px;
+            margin-bottom: 16px; box-shadow: var(--shadow); display: flex; align-items: center;
+            transition: transform 0.2s;
+        }
+        .music-item:hover { transform: translateY(-3px); }
+
+        .cover-img {
+            width: 70px; height: 70px; border-radius: 12px; object-fit: cover;
+            margin-right: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); flex-shrink: 0;
+        }
+
+        .info { flex-grow: 1; min-width: 0; }
+        .date { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
+        .title {
+            font-size: 17px; font-weight: 700; margin: 0 0 4px 0; color: var(--text-main);
+            text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .artist { font-size: 14px; color: var(--text-sub); }
+
+        .actions { display: flex; flex-direction: column; gap: 6px; margin-left: 10px; }
+        .action-btn {
+            padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;
+            border: none; cursor: pointer; white-space: nowrap;
+        }
+        .edit-btn { background-color: #E3F2FD; color: #1E88E5; }
+        .delete-btn { background-color: #FFEBEE; color: #D32F2F; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>MUSIC DIARY</h1>
+
+        <div class="input-card">
+            <input type="date" id="date">
+            <input type="text" id="title" placeholder="Song Title">
+            <input type="text" id="artist" placeholder="Artist">
+            <input type="text" id="url" placeholder="Song URL (YouTube or Apple Music)">
+            <input type="text" id="cover-url-input" placeholder="Cover Image URL (Optional for YouTube)">
+            
+            <button id="save-btn" onclick="saveMusic()">Add to Diary</button>
+            <button id="cancel-btn" onclick="resetForm()">Cancel Edit</button>
+        </div>
+
+        <div id="music-list">
+            <div style="text-align:center; color:#999; margin-top:20px;">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        // 🔒 설정: 본인의 JSONBin 정보를 입력하세요
+        const API_KEY = '$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO'; 
+        const BIN_ID = '693ed9ceae596e708f998a8d'; 
+        
+        let musicData = [];
+        let isEditing = false;
+        let editIndex = null;
+
+        async function loadMusic() {
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': API_KEY }
+                });
+                const data = await response.json();
+                musicData = data.record;
+                renderList();
+            } catch (error) {
+                document.getElementById('music-list').innerHTML = '<p style="text-align:center;">Failed to load.</p>';
+            }
+        }
+
+        function renderList() {
+            const listContainer = document.getElementById('music-list');
+            listContainer.innerHTML = '';
+            
+            if (musicData.length === 0) {
+                listContainer.innerHTML = '<p style="text-align:center; color:#999;">No music yet.</p>';
+                return;
+            }
+
+            musicData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'music-item';
+                div.innerHTML = `
+                    <img src="${item.cover}" class="cover-img" onerror="this.src='https://via.placeholder.com/70?text=No+Img'">
+                    <div class="info">
+                        <div class="date">${item.date}</div>
+                        <a href="${item.url}" target="_blank" class="title">${item.title}</a>
+                        <div class="artist">${item.artist}</div>
+                    </div>
+                    <div class="actions">
+                        <button class="action-btn edit-btn" onclick="startEdit(${index})">EDIT</button>
+                        <button class="action-btn delete-btn" onclick="deleteMusic(${index})">DEL</button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        function startEdit(index) {
+            const item = musicData[index];
+            document.getElementById('date').value = item.date;
+            document.getElementById('title').value = item.title;
+            document.getElementById('artist').value = item.artist;
+            document.getElementById('url').value = item.url;
+            document.getElementById('cover-url-input').value = item.cover; // 커버 URL도 불러오기
+
+            isEditing = true;
+            editIndex = index;
+            document.getElementById('save-btn').textContent = "Update Entry";
+            document.getElementById('cancel-btn').style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function saveMusic() {
+            const date = document.getElementById('date').value;
+            const title = document.getElementById('title').value;
+            const artist = document.getElementById('artist').value;
+            const url = document.getElementById('url').value;
+            const manualCover = document.getElementById('cover-url-input').value; // 수동 입력값
+
+            if (!title || !url) {
+                alert("Title and URL are required.");
+                return;
+            }
+
+            // 1. 수동 입력한 커버가 있으면 그걸 최우선으로 사용
+            let finalCover = manualCover;
+
+            // 2. 수동 입력이 없고, 유튜브 링크라면 자동 추출 시도
+            if (!finalCover) {
+                let videoId = "";
+                if(url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1].split("?")[0];
+                else if(url.includes("v=")) videoId = url.split("v=")[1].split("&")[0];
+                
+                if (videoId) {
+                    finalCover = `https://img.youtube.com/vi/${videoId}/0.jpg`;
+                } else {
+                    finalCover = 'https://via.placeholder.com/70?text=Music'; // 기본 이미지
+                }
+            }
+
+            const newItem = { date, title, artist, url, cover: finalCover };
+
+            if (isEditing) {
+                musicData[editIndex] = newItem;
+                alert("Updated!");
+            } else {
+                musicData.push(newItem);
+                alert("Added!");
+            }
+            
+            await updateBin();
+            resetForm();
+        }
+
+        async function deleteMusic(index) {
+            if(confirm("Delete this entry?")) {
+                musicData.splice(index, 1);
+                await updateBin();
+            }
+        }
+
+        async function updateBin() {
+            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+                body: JSON.stringify(musicData)
+            });
+            renderList();
+        }
+
+        function resetForm() {
+            document.getElementById('date').value = new Date().toISOString().substring(0, 10);
+            document.getElementById('title').value = '';
+            document.getElementById('artist').value = '';
+            document.getElementById('url').value = '';
+            document.getElementById('cover-url-input').value = '';
+            
+            isEditing = false;
+            editIndex = null;
+            document.getElementById('save-btn').textContent = "Add to Diary";
+            document.getElementById('cancel-btn').style.display = "none";
+        }
+
+        document.getElementById('date').valueAsDate = new Date();
+        loadMusic();
+    </script>
+</body>
+</html>

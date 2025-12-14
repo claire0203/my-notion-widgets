@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pastel Music Diary</title>
+<style>
+  /* --- 디자인 테마 (패밀리 룩) --- */
+  :root {
+    --bg-color: transparent;
+    --card-bg: #D7E8F7; /* 파스텔 블루 */
+    --paper-bg: #ffffff; /* 일기장 종이 색 */
+    --text-color: #455A64;
+    --accent-color: #90CAF9;
+    --accent-dark: #64B5F6;
+    --shadow: 0 10px 30px rgba(69, 90, 100, 0.15);
+    /* UI 폰트 */
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    /* 일기 본문 폰트 (감성적인 명조/타자기 느낌) */
+    --font-diary: "KoPub Batang", "Times New Roman", serif;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; 
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px 0;
+    font-family: var(--font-ui);
+    color: var(--text-color);
+    box-sizing: border-box;
+  }
+
+  /* 메인 카드 (바인더 느낌) */
+  .diary-card {
+    background: var(--card-bg);
+    width: 400px; /* 조금 더 넓게 */
+    padding: 30px;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    max-height: 90vh;
+  }
+
+  /* 왼쪽 바인더 구멍 장식 (디자인 요소) */
+  .binder-rings {
+    position: absolute;
+    left: 15px;
+    top: 40px;
+    bottom: 40px;
+    width: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .ring {
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  .loading-indicator {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 12px;
+    color: var(--text-color);
+    opacity: 0;
+    font-weight: bold;
+  }
+  .loading-indicator.show { opacity: 0.8; }
+
+  .card-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin: 0 0 20px 0;
+    text-align: center;
+    padding-left: 20px; /* 링 때문에 약간 오른쪽으로 */
+  }
+
+  /* --- 입력 영역 (접었다 폈다 가능하게 할 수도 있지만, 직관적으로 노출) --- */
+  .input-area {
+    background: rgba(255,255,255,0.5);
+    padding: 15px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 25px;
+    margin-left: 15px; /* 링 공간 확보 */
+  }
+
+  .date-picker {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    color: var(--text-color);
+    outline: none;
+  }
+
+  .diary-input {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .diary-input:focus { border-color: var(--accent-color); }
+  
+  /* 임베드 코드 입력창은 좀 더 다르게 */
+  .embed-input {
+    font-family: monospace;
+    font-size: 11px;
+    color: #666;
+  }
+
+  #addBtn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: background 0.2s;
+  }
+  #addBtn:hover { background: var(--accent-dark); }
+
+
+  /* --- 다이어리 리스트 영역 --- */
+  #diaryList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+    -ms-overflow-style: none; 
+    scrollbar-width: none;
+    padding-left: 15px; /* 링 공간 */
+  }
+  #diaryList::-webkit-scrollbar { display: none; }
+
+  /* 개별 일기장 페이지 (Entry) */
+  .diary-entry {
+    background: var(--paper-bg);
+    padding: 20px;
+    border-radius: 4px 16px 16px 4px; /* 왼쪽은 직각, 오른쪽은 둥글게 (종이 느낌) */
+    margin-bottom: 20px;
+    box-shadow: 1px 2px 5px rgba(0,0,0,0.05);
+    position: relative;
+    animation: slideIn 0.4s ease-out;
+    border-left: 4px solid rgba(0,0,0,0.05); /* 제본 부분 표현 */
+  }
+
+  .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #ddd; /* 점선 밑줄 */
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+  }
+
+  .entry-date {
+    font-family: var(--font-diary);
+    font-weight: bold;
+    font-size: 16px;
+    color: #37474F;
+  }
+
+  .delete-btn {
+    cursor: pointer;
+    font-size: 18px;
+    color: #ddd;
+    line-height: 1;
+  }
+  .delete-btn:hover { color: #ff8a80; }
+
+  .entry-note {
+    font-family: var(--font-diary);
+    font-size: 15px;
+    line-height: 1.6;
+    color: #455A64;
+    margin-bottom: 15px;
+    white-space: pre-wrap;
+  }
+
+  /* 임베드된 플레이어 컨테이너 */
+  .entry-player {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+  
+  /* 사용자가 넣은 iframe 스타일 강제 조정 */
+  .entry-player iframe {
+    width: 100% !important;
+    border: none !important;
+    display: block !important;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="diary-card">
+  <div class="loading-indicator" id="loadingIndicator">Checking...</div>
+  
+  <div class="binder-rings">
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div>
+  </div>
+
+  <h2 class="card-title">Music Diary</h2>
+
+  <div class="input-area">
+    <input type="date" id="dateInput" class="date-picker">
+    <input type="text" id="noteInput" class="diary-input" placeholder="오늘의 감상평 (짧은 메모)">
+    <input type="text" id="embedInput" class="diary-input embed-input" placeholder='애플뮤직 "임베드 코드"를 붙여넣으세요 (&lt;iframe...&gt;)'>
+    <button id="addBtn">기록하기 (Record)</button>
+  </div>
+
+  <ul id="diaryList">
+    </ul>
+</div>
+
+<script>
+  // =======================================================
+  // [필수] 다이어리용 새 정보를 입력하세요! (대괄호 [] Bin)
+  
+  const DIARY_BIN_ID = "693ed144d0ea881f4028d337"; 
+  const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
+  // =======================================================
+
+  const API_URL = `https://api.jsonbin.io/v3/b/${DIARY_BIN_ID}`;
+  let diaryData = [];
+
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const dateInput = document.getElementById('dateInput');
+  const noteInput = document.getElementById('noteInput');
+  const embedInput = document.getElementById('embedInput');
+  const diaryList = document.getElementById('diaryList');
+
+  function init() {
+    // 오늘 날짜 기본 설정
+    dateInput.valueAsDate = new Date();
+    loadData();
+    document.getElementById('addBtn').addEventListener('click', addEntry);
+  }
+
+  function showLoading(show, txt="Loading...") {
+    loadingIndicator.textContent = txt;
+    loadingIndicator.classList.toggle('show', show);
+  }
+
+  // --- Read ---
+  function loadData() {
+    showLoading(true);
+    fetch(API_URL, {
+      method: 'GET',
+      headers: { 'X-Master-Key': API_KEY }
+    })
+    .then(r => r.json())
+    .then(data => {
+      diaryData = Array.isArray(data.record) ? data.record : [];
+      renderDiary();
+      showLoading(false);
+    })
+    .catch(e => { console.error(e); showLoading(true, "Error!"); });
+  }
+
+  // --- Save ---
+  function saveData() {
+    showLoading(true, "Saving...");
+    fetch(API_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+      body: JSON.stringify(diaryData),
+    })
+    .then(r => r.json())
+    .then(() => {
+      renderDiary();
+      showLoading(false);
+      // 입력창 초기화
+      noteInput.value = '';
+      embedInput.value = '';
+    })
+    .catch(e => { console.error(e); showLoading(true, "Save Error!"); });
+  }
+
+  // --- Add ---
+  function addEntry() {
+    const date = dateInput.value;
+    const note = noteInput.value.trim();
+    const embedCode = embedInput.value.trim();
+
+    if (!embedCode.startsWith('<iframe')) {
+      alert("올바른 '임베드 코드'가 아닙니다.\n애플뮤직 > 공유 > '임베드 코드 복사'를 해주세요!");
+      return;
+    }
+
+    // 새 기록 생성
+    const newEntry = {
+      id: Date.now(),
+      date: date,
+      note: note,
+      embed: embedCode
+    };
+
+    // 최신순으로 앞에 추가
+    diaryData.unshift(newEntry);
+    saveData();
+  }
+
+  // --- Delete ---
+  window.deleteEntry = function(id) {
+    if (!confirm("이 기록을 찢어버릴까요? (삭제)")) return;
+    diaryData = diaryData.filter(e => e.id !== id);
+    saveData();
+  }
+
+  // --- Render ---
+  function renderDiary() {
+    diaryList.innerHTML = '';
+    
+    if (diaryData.length === 0) {
+      diaryList.innerHTML = '<li style="text-align:center; color:#888; padding:30px; font-size:14px;">아직 기록된 음악이 없습니다.<br>오늘의 BGM을 남겨보세요! 🎼</li>';
+      return;
+    }
+
+    diaryData.forEach(entry => {
+      const li = document.createElement('li');
+      li.className = 'diary-entry';
+      
+      // 날짜 포맷 예쁘게 (2023-10-27 -> 2023년 10월 27일)
+      const dateObj = new Date(entry.date);
+      const dateStr = `${dateObj.getFullYear()}년 ${dateObj.getMonth()+1}월 ${dateObj.getDate()}일`;
+
+      li.innerHTML = `
+        <div class="entry-header">
+          <span class="entry-date">${dateStr}</span>
+          <span class="delete-btn" onclick="deleteEntry(${entry.id})">&times;</span>
+        </div>
+        ${entry.note ? `<div class="entry-note">${entry.note}</div>` : ''}
+        <div class="entry-player">
+          ${entry.embed} 
+        </div>
+      `;
+      diaryList.appendChild(li);
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>

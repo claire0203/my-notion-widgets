@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fixed Guestbook</title>
+<style>
+  :root { --bg-color: transparent; --card-bg: #D7E8F7; --text-color: #455A64; --accent-color: #90CAF9; --accent-dark: #64B5F6; --shadow: 0 10px 30px rgba(69, 90, 100, 0.15); --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background-color: var(--bg-color); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px 0; font-family: var(--font-stack); color: var(--text-color); box-sizing: border-box; }
+  .guestbook-card { background: var(--card-bg); width: 380px; padding: 30px; border-radius: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative; max-height: 90vh; }
+  .loading-indicator { position: absolute; top: 15px; right: 20px; font-size: 12px; color: var(--text-color); opacity: 0; font-weight: bold; }
+  .loading-indicator.show { opacity: 0.8; }
+  .card-title { font-size: 20px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 20px 0; text-align: center; }
+  .input-area { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+  .gb-input { padding: 12px; border: 2px solid #eee; border-radius: 12px; background: #f9f9f9; outline: none; transition: border-color 0.2s; font-family: var(--font-stack); }
+  .gb-input:focus { border-color: var(--accent-color); }
+  textarea.gb-input { resize: none; height: 60px; }
+  #submitBtn { background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 700; }
+  #submitBtn:hover { background: var(--accent-dark); }
+  #messageList { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; -ms-overflow-style: none; scrollbar-width: none; }
+  #messageList::-webkit-scrollbar { display: none; }
+  .message-item { background: #f5f7fa; padding: 15px; border-radius: 16px; margin-bottom: 12px; position: relative; animation: fadeIn 0.3s ease-in-out; }
+  .msg-header { display: flex; justify-content: space-between; margin-bottom: 8px; padding-right: 50px; }
+  .msg-name { font-weight: 700; font-size: 15px; color: #37474F; }
+  .msg-date { font-size: 12px; color: #90A4AE; }
+  .msg-content { font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+  
+  /* 수정/삭제 버튼 스타일 강화 */
+  .msg-controls { position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; z-index: 10; }
+  .control-btn { cursor: pointer; font-size: 16px; color: #CFD8DC; transition: color 0.2s; padding: 2px; }
+  .btn-edit:hover { color: #64B5F6; }
+  .btn-delete:hover { color: #ff8a80; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="guestbook-card">
+  <div class="loading-indicator" id="loadingIndicator">Connecting...</div>
+  <h2 class="card-title">GUESTBOOK</h2>
+  <div class="input-area">
+    <input type="text" id="nameInput" class="gb-input" placeholder="이름 (Name)" maxlength="20">
+    <textarea id="messageInput" class="gb-input" placeholder="메시지를 남겨주세요"></textarea>
+    <button id="submitBtn">남기기</button>
+  </div>
+  <ul id="messageList"></ul>
+</div>
+
+<script>
+  // ==========================================
+  // [필수] 방명록용 정보를 입력하세요 (대괄호 []로 시작하는 Bin)
+  const GUESTBOOK_BIN_ID = "693ec54bae596e708f996af3"; 
+  const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
+  // ==========================================
+
+  const API_URL = `https://api.jsonbin.io/v3/b/${GUESTBOOK_BIN_ID}`;
+  let messagesData = [];
+  const loadingIndicator = document.getElementById('loadingIndicator');
+
+  function init() {
+    loadMessages();
+    document.getElementById('submitBtn').addEventListener('click', addMessage);
+  }
+
+  function showLoading(show, txt="Loading...") {
+    loadingIndicator.textContent = txt;
+    loadingIndicator.classList.toggle('show', show);
+  }
+
+  // --- 데이터 불러오기 ---
+  function loadMessages() {
+    showLoading(true);
+    fetch(API_URL, {
+      method: 'GET',
+      headers: { 'X-Master-Key': API_KEY }
+    })
+    .then(r => r.json())
+    .then(data => {
+      // 데이터가 없거나 형식이 다르면 빈 배열로 초기화
+      messagesData = Array.isArray(data.record) ? data.record : [];
+      renderMessages();
+      showLoading(false);
+    })
+    .catch(e => { console.error(e); showLoading(true, "Error!"); });
+  }
+
+  // --- 데이터 저장하기 ---
+  function saveMessages() {
+    showLoading(true, "Saving...");
+    fetch(API_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+      body: JSON.stringify(messagesData),
+    })
+    .then(r => r.json())
+    .then(() => {
+      renderMessages();
+      showLoading(false);
+    })
+    .catch(e => { console.error(e); showLoading(true, "Save Error!"); });
+  }
+
+  function addMessage() {
+    const name = document.getElementById('nameInput').value.trim();
+    const content = document.getElementById('messageInput').value.trim();
+    if (!name || !content) return alert("내용을 입력해주세요.");
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear().toString().slice(2)}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+    
+    messagesData.unshift({
+      id: Date.now(), // 고유 ID 생성
+      name: name,
+      content: content,
+      date: dateStr
+    });
+
+    saveMessages();
+    document.getElementById('nameInput').value = '';
+    document.getElementById('messageInput').value = '';
+  }
+
+  // --- 삭제 기능 (ID로 정확하게 찾아서 삭제) ---
+  window.deleteMsg = function(id) {
+    if (!confirm("삭제하시겠습니까?")) return;
+    messagesData = messagesData.filter(m => m.id !== id);
+    saveMessages();
+  }
+
+  // --- 수정 기능 ---
+  window.editMsg = function(id) {
+    const msg = messagesData.find(m => m.id === id);
+    if (!msg) return;
+    const newText = prompt("수정할 내용을 입력하세요:", msg.content);
+    if (newText !== null && newText.trim() !== "") {
+      msg.content = newText;
+      saveMessages();
+    }
+  }
+
+  function renderMessages() {
+    const list = document.getElementById('messageList');
+    list.innerHTML = '';
+    
+    if (messagesData.length === 0) {
+      list.innerHTML = '<li style="text-align:center; color:#aaa; padding:20px;">첫 글을 남겨보세요! 💙</li>';
+      return;
+    }
+
+    messagesData.forEach(msg => {
+      const li = document.createElement('li');
+      li.className = 'message-item';
+      li.innerHTML = `
+        <div class="msg-controls">
+           <span class="control-btn btn-edit" onclick="editMsg(${msg.id})">✎</span>
+           <span class="control-btn btn-delete" onclick="deleteMsg(${msg.id})">✕</span>
+        </div>
+        <div class="msg-header">
+          <span class="msg-name">${msg.name}</span>
+          <span class="msg-date">${msg.date}</span>
+        </div>
+        <div class="msg-content">${msg.content}</div>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>

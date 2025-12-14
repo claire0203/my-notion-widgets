@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Diary</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; }
+        h1 { text-align: center; color: #333; }
+        
+        /* 입력 폼 스타일 */
+        .input-group { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button#save-btn { width: 100%; padding: 10px; background-color: #333; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button#save-btn:hover { background-color: #555; }
+        button#cancel-btn { width: 100%; padding: 10px; background-color: #999; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 5px; display: none; }
+
+        /* 리스트 스타일 */
+        .music-item { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .cover-img { width: 80px; height: 80px; object-fit: cover; border-radius: 5px; margin-right: 15px; background-color: #eee; }
+        .info { flex-grow: 1; }
+        .date { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .title { font-size: 18px; font-weight: bold; margin: 0; color: #222; text-decoration: none; }
+        .artist { font-size: 14px; color: #555; margin-top: 4px; }
+        
+        /* 버튼 그룹 */
+        .btn-group { display: flex; flex-direction: column; gap: 5px; }
+        .edit-btn { background-color: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .delete-btn { background-color: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <h1>🎧 My Music Diary</h1>
+
+    <div class="input-group">
+        <input type="date" id="date">
+        <input type="text" id="title" placeholder="노래 제목 (예: JoyRide)">
+        <input type="text" id="artist" placeholder="가수 (예: CORTIS)">
+        <input type="text" id="url" placeholder="유튜브 링크">
+        <button id="save-btn" onclick="saveMusic()">기록하기</button>
+        <button id="cancel-btn" onclick="resetForm()">취소</button>
+    </div>
+
+    <div id="music-list">
+        <p style="text-align: center; color: #888;">데이터를 불러오는 중...</p>
+    </div>
+
+    <script>
+        // 🔒 설정: 본인의 JSONBin 정보를 여기에 입력하세요
+        const API_KEY = '$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO'; // Master Key
+        const BIN_ID = '693ed52743b1c97be9edc4dd'; // Bin ID
+        
+        let musicData = []; // 데이터를 담을 전역 변수
+        let isEditing = false; // 현재 수정 모드인지 확인
+        let editIndex = null; // 수정 중인 아이템의 인덱스
+
+        // 1. 데이터 불러오기 (Read)
+        async function loadMusic() {
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': API_KEY }
+                });
+                const data = await response.json();
+                musicData = data.record; // 데이터 저장
+                renderList(); // 화면 그리기
+            } catch (error) {
+                console.error("로딩 실패:", error);
+                document.getElementById('music-list').innerHTML = "데이터를 불러오지 못했습니다.";
+            }
+        }
+
+        // 2. 화면에 리스트 그리기
+        function renderList() {
+            const listContainer = document.getElementById('music-list');
+            listContainer.innerHTML = '';
+
+            // 최신 날짜가 위로 오게 정렬 (선택사항)
+            // musicData.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            musicData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'music-item';
+                div.innerHTML = `
+                    <img src="${item.cover}" class="cover-img" onerror="this.src='https://via.placeholder.com/80?text=No+Img'">
+                    <div class="info">
+                        <div class="date">${item.date}</div>
+                        <a href="${item.url}" target="_blank" class="title">${item.title}</a>
+                        <div class="artist">${item.artist}</div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="edit-btn" onclick="startEdit(${index})">수정</button>
+                        <button class="delete-btn" onclick="deleteMusic(${index})">삭제</button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        // 3. 수정 모드 시작 (Edit Mode)
+        function startEdit(index) {
+            const item = musicData[index];
+            
+            // 입력창에 값 채워넣기
+            document.getElementById('date').value = item.date;
+            document.getElementById('title').value = item.title;
+            document.getElementById('artist').value = item.artist;
+            document.getElementById('url').value = item.url;
+
+            // 상태 변경
+            isEditing = true;
+            editIndex = index;
+
+            // 버튼 모양 변경
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.textContent = "수정 완료";
+            saveBtn.style.backgroundColor = "#4CAF50"; // 초록색으로 변경
+            document.getElementById('cancel-btn').style.display = "block"; // 취소 버튼 보이기
+
+            // 스크롤을 맨 위로 (입력창으로)
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 4. 저장 및 수정 실행 (Create & Update)
+        async function saveMusic() {
+            const date = document.getElementById('date').value;
+            const title = document.getElementById('title').value;
+            const artist = document.getElementById('artist').value;
+            const url = document.getElementById('url').value;
+
+            if (!title || !url) {
+                alert("제목과 링크는 필수입니다!");
+                return;
+            }
+
+            // 유튜브 썸네일 자동 추출
+            let videoId = url.split('v=')[1];
+            if (videoId) {
+                const ampersandPosition = videoId.indexOf('&');
+                if (ampersandPosition !== -1) {
+                    videoId = videoId.substring(0, ampersandPosition);
+                }
+            }
+            const cover = videoId ? `https://img.youtube.com/vi/${videoId}/0.jpg` : 'https://via.placeholder.com/80';
+
+            const newItem = { date, title, artist, url, cover };
+
+            if (isEditing) {
+                // 수정 모드일 경우: 해당 인덱스의 데이터 교체
+                musicData[editIndex] = newItem;
+                alert("수정되었습니다! (서버 저장 중...)");
+            } else {
+                // 일반 모드일 경우: 새 데이터 추가
+                musicData.push(newItem);
+                alert("추가되었습니다! (서버 저장 중...)");
+            }
+
+            // 서버에 저장 (PUT)
+            await updateBin();
+            resetForm(); // 폼 초기화
+        }
+
+        // 5. 삭제 기능 (Delete)
+        async function deleteMusic(index) {
+            if(confirm("정말 삭제하시겠습니까?")) {
+                musicData.splice(index, 1); // 배열에서 삭제
+                await updateBin(); // 서버 저장
+            }
+        }
+
+        // 6. JSONBin 업데이트 (공통 함수)
+        async function updateBin() {
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify(musicData)
+                });
+                renderList(); // 화면 갱신
+            } catch (error) {
+                console.error("저장 실패:", error);
+                alert("저장에 실패했습니다.");
+            }
+        }
+
+        // 7. 폼 초기화
+        function resetForm() {
+            document.getElementById('date').value = '';
+            document.getElementById('title').value = '';
+            document.getElementById('artist').value = '';
+            document.getElementById('url').value = '';
+            
+            isEditing = false;
+            editIndex = null;
+            
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.textContent = "기록하기";
+            saveBtn.style.backgroundColor = "#333";
+            document.getElementById('cancel-btn').style.display = "none";
+        }
+
+        // 시작 시 데이터 로드
+        document.getElementById('date').valueAsDate = new Date(); // 오늘 날짜 기본 설정
+        loadMusic();
+    </script>
+</body>
+</html>

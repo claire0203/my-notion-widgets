@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitsch Music Diary</title>
+<style>
+  /* --- 디자인 테마 (기존 유지) --- */
+  :root {
+    --bg-color: transparent;
+    --card-bg: #D7E8F7; 
+    --paper-bg: #ffffff;
+    --text-color: #455A64;
+    --accent-color: #90CAF9;
+    --accent-dark: #64B5F6;
+    --shadow: 0 10px 30px rgba(69, 90, 100, 0.15);
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    display: flex; justify-content: center; align-items: flex-start; 
+    min-height: 100vh; margin: 0; padding: 20px 0;
+    font-family: var(--font-stack); color: var(--text-color); box-sizing: border-box;
+  }
+
+  /* 메인 카드 */
+  .diary-card {
+    background-color: var(--card-bg);
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
+    width: 400px; padding: 30px; border-radius: 24px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; position: relative; min-height: 600px; 
+  }
+
+  .binder-rings {
+    position: absolute; left: 12px; top: 40px; bottom: 40px; width: 15px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    z-index: 2; pointer-events: none;
+  }
+  .ring {
+    width: 14px; height: 14px; background: #fff; border-radius: 50%;
+    border: 2px solid #BDD7EE; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .loading-indicator {
+    position: absolute; top: 15px; right: 20px; font-size: 12px;
+    color: var(--text-color); opacity: 0; font-weight: 800; transition: opacity 0.3s;
+  }
+  .loading-indicator.show { opacity: 0.8; }
+
+  .card-title {
+    font-size: 22px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase;
+    margin: 0 0 25px 0; text-align: center; padding-left: 20px; color: #fff;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+  }
+
+  /* 입력 영역 */
+  .input-area {
+    background: rgba(255,255,255,0.7); backdrop-filter: blur(5px);
+    padding: 15px; border-radius: 16px; display: flex; flex-direction: column;
+    gap: 10px; margin-bottom: 25px; margin-left: 20px; border: 2px solid #fff;
+  }
+
+  .date-picker {
+    padding: 10px; border: 2px solid #eee; border-radius: 10px;
+    font-family: var(--font-stack); color: var(--text-color); outline: none; font-weight: 600;
+  }
+
+  .diary-input {
+    padding: 12px; border: 2px solid #eee; border-radius: 10px;
+    background: #fff; font-family: var(--font-stack); font-size: 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .diary-input:focus { border-color: var(--accent-color); }
+  
+  .embed-input { font-family: monospace; font-size: 11px; color: #888; }
+
+  /* 버튼 그룹 */
+  .btn-group { display: flex; gap: 5px; }
+  
+  button {
+    padding: 12px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer;
+    transition: transform 0.1s; font-family: var(--font-stack); flex: 1;
+  }
+  button:active { transform: scale(0.98); }
+
+  #saveBtn { background: var(--accent-color); color: white; flex: 2; }
+  #saveBtn:hover { background: var(--accent-dark); }
+  #saveBtn:disabled { background: #ccc; cursor: not-allowed; }
+
+  #cancelBtn { background: #ECEFF1; color: #90A4AE; display: none; } /* 기본 숨김 */
+
+  /* 리스트 */
+  #diaryList { list-style: none; padding: 0; margin: 0; margin-left: 20px; flex-grow: 1; }
+
+  .diary-entry {
+    background: var(--paper-bg); padding: 20px; border-radius: 4px;
+    margin-bottom: 25px; box-shadow: 2px 4px 10px rgba(0,0,0,0.05);
+    position: relative; animation: slideIn 0.3s ease-out; border: 1px solid #eee;
+  }
+
+  .diary-entry::before {
+    content: ''; position: absolute; top: -10px; left: 50%;
+    transform: translateX(-50%) rotate(-2deg); width: 80px; height: 25px;
+    background-color: rgba(255, 255, 255, 0.6);
+    border-left: 2px dashed rgba(0,0,0,0.1); border-right: 2px dashed rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1;
+  }
+
+  .entry-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px dashed #E0F2F1;
+  }
+
+  .entry-date-group { display: flex; align-items: center; gap: 8px; }
+
+  .date-sticker {
+    background: #FFECB3; padding: 2px 6px; border-radius: 4px;
+    font-size: 12px; font-weight: bold; color: #FF6F00; transform: rotate(-3deg);
+  }
+
+  .entry-date { font-weight: 700; font-size: 15px; color: #546E7A; }
+
+  /* 수정/삭제 버튼 */
+  .action-btns { display: flex; gap: 8px; }
+  .icon-btn { cursor: pointer; font-size: 14px; border: none; background: none; padding: 0; }
+  .edit-btn { color: #81C784; } /* 초록색 */
+  .delete-btn { color: #E57373; } /* 빨간색 */
+
+  .entry-note {
+    font-size: 15px; line-height: 1.5; color: #455A64; margin-bottom: 15px;
+    white-space: pre-wrap; background: #FAFAFA; padding: 10px; border-radius: 8px;
+  }
+
+  .entry-player {
+    width: 100%; border-radius: 12px; overflow: hidden;
+    background: #f0f0f0; border: 4px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  .entry-player iframe { width: 100% !important; border: none !important; display: block !important; }
+
+  .pagination-controls {
+    display: flex; justify-content: center; align-items: center; gap: 15px;
+    margin-top: 20px; padding-left: 20px;
+  }
+  .page-btn {
+    background: #fff; border: 2px solid #D7E8F7; border-radius: 50%;
+    width: 36px; height: 36px; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; color: var(--accent-color); font-weight: bold; font-size: 18px; transition: all 0.2s;
+  }
+  .page-btn:hover { background: var(--accent-color); color: #fff; }
+  .page-btn:disabled { background: #eee; border-color: #eee; color: #ccc; cursor: not-allowed; }
+
+  .page-info { font-size: 14px; font-weight: 700; color: var(--text-color); }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="diary-card">
+  <div class="loading-indicator" id="loadingIndicator">Checking...</div>
+  
+  <div class="binder-rings">
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div>
+  </div>
+
+  <h2 class="card-title">MY MUSIC DIARY</h2>
+
+  <div class="input-area">
+    <input type="date" id="dateInput" class="date-picker">
+    <input type="text" id="noteInput" class="diary-input" placeholder="오늘의 감상평 (Comment)">
+    <input type="text" id="embedInput" class="diary-input embed-input" placeholder='애플뮤직 Embed Code 붙여넣기'>
+    
+    <div class="btn-group">
+        <button id="cancelBtn" onclick="resetForm()">취소</button>
+        <button id="saveBtn" onclick="saveData()">기록하기</button>
+    </div>
+  </div>
+
+  <ul id="diaryList"></ul>
+
+  <div class="pagination-controls">
+    <button id="prevBtn" class="page-btn">&lt;</button>
+    <span id="pageInfo" class="page-info">1 / 1</span>
+    <button id="nextBtn" class="page-btn">&gt;</button>
+  </div>
+</div>
+
+<script>
+  // =======================================================
+  // [필수] 본인의 JSONBin 정보를 정확히 입력해주세요!
+  const DIARY_BIN_ID = "693f0975ae596e708f99de54"; 
+  const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
+  // =======================================================
+
+  const API_URL = `https://api.jsonbin.io/v3/b/${DIARY_BIN_ID}`;
+  let diaryData = [];
+  
+  // 수정 기능을 위한 변수
+  let isEditing = false;
+  let editId = null;
+
+  let currentPage = 1;
+  const itemsPerPage = 3;
+
+  // DOM Elements
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const dateInput = document.getElementById('dateInput');
+  const noteInput = document.getElementById('noteInput');
+  const embedInput = document.getElementById('embedInput');
+  const diaryList = document.getElementById('diaryList');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const pageInfo = document.getElementById('pageInfo');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+
+  function init() {
+    dateInput.valueAsDate = new Date();
+    
+    // 안전장치: 데이터 로드 전 저장 버튼 비활성화
+    saveBtn.disabled = true; 
+    saveBtn.textContent = "로딩 중...";
+
+    loadData();
+    
+    prevBtn.addEventListener('click', () => changePage(-1));
+    nextBtn.addEventListener('click', () => changePage(1));
+  }
+
+  function showLoading(show, txt="Loading...") {
+    loadingIndicator.textContent = txt;
+    loadingIndicator.classList.toggle('show', show);
+  }
+
+  // --- 1. Load Data (안전하게 불러오기) ---
+  function loadData() {
+    showLoading(true);
+    fetch(API_URL + '/latest', {
+      method: 'GET',
+      headers: { 'X-Master-Key': API_KEY }
+    })
+    .then(r => r.json())
+    .then(data => {
+      // JSONBin 구조 ({ record: [...] })를 고려하여 데이터 추출
+      if (data.record && Array.isArray(data.record)) {
+        diaryData = data.record;
+      } else if (Array.isArray(data)) {
+        diaryData = data;
+      } else {
+        diaryData = [];
+      }
+      
+      // 로드 성공 시 버튼 활성화
+      saveBtn.disabled = false;
+      saveBtn.textContent = "기록하기";
+
+      currentPage = 1;
+      renderDiary();
+      showLoading(false);
+    })
+    .catch(e => {
+      console.error(e);
+      showLoading(true, "Load Error!");
+      saveBtn.textContent = "API 확인 필요";
+    });
+  }
+
+  // --- 2. Save Data (추가 및 수정 로직 통합) ---
+  function saveData() {
+    const date = dateInput.value;
+    const note = noteInput.value.trim();
+    const embedCode = embedInput.value.trim();
+
+    if (!embedCode.startsWith('<iframe')) {
+      alert("올바른 애플뮤직 '임베드 코드'를 넣어주세요!");
+      return;
+    }
+
+    showLoading(true, "Saving...");
+    saveBtn.disabled = true; // 중복 클릭 방지
+
+    if (isEditing) {
+      // [수정 모드] 기존 ID를 찾아 데이터 교체
+      const index = diaryData.findIndex(item => item.id === editId);
+      if (index !== -1) {
+        diaryData[index] = { ...diaryData[index], date, note, embed: embedCode };
+      }
+    } else {
+      // [새 기록] 맨 앞에 추가
+      const newEntry = {
+        id: Date.now(),
+        date: date,
+        note: note,
+        embed: embedCode
+      };
+      diaryData.unshift(newEntry);
+    }
+
+    // 서버에 저장 (항상 {record: [...]} 형태로 감싸서 보냄)
+    fetch(API_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+      body: JSON.stringify({ record: diaryData }),
+    })
+    .then(r => r.json())
+    .then(() => {
+      renderDiary();
+      showLoading(false);
+      resetForm(); // 입력창 초기화
+    })
+    .catch(e => { 
+        console.error(e); 
+        showLoading(true, "Save Error!");
+        alert("저장에 실패했습니다. API Key를 확인하세요.");
+        saveBtn.disabled = false;
+    });
+  }
+
+  // --- 3. 수정 모드 시작 ---
+  window.startEdit = function(id) {
+    const item = diaryData.find(e => e.id === id);
+    if (!item) return;
+
+    // 입력창에 값 채우기
+    dateInput.value = item.date;
+    noteInput.value = item.note;
+    embedInput.value = item.embed;
+
+    // 모드 변경
+    isEditing = true;
+    editId = id;
+
+    // 버튼 상태 변경
+    saveBtn.textContent = "수정 완료";
+    saveBtn.style.backgroundColor = "#81C784"; // 초록색
+    cancelBtn.style.display = "block"; // 취소 버튼 보이기
+
+    // 스크롤 올리기
+    document.querySelector('.input-area').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // --- 4. 초기화 (취소 버튼) ---
+  window.resetForm = function() {
+    dateInput.valueAsDate = new Date();
+    noteInput.value = '';
+    embedInput.value = '';
+    
+    isEditing = false;
+    editId = null;
+
+    saveBtn.textContent = "기록하기";
+    saveBtn.style.backgroundColor = ""; // 원래 색으로
+    saveBtn.disabled = false;
+    cancelBtn.style.display = "none";
+  }
+
+  // --- 5. 삭제 ---
+  window.deleteEntry = function(id) {
+    if (!confirm("정말 이 기록을 삭제할까요?")) return;
+    
+    showLoading(true, "Deleting...");
+    diaryData = diaryData.filter(e => e.id !== id);
+    
+    // 삭제 후 서버 저장
+    fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify({ record: diaryData }),
+      })
+      .then(() => {
+        renderDiary();
+        showLoading(false);
+        // 만약 수정 중이던 걸 삭제했다면 폼 초기화
+        if (isEditing && editId === id) resetForm();
+      });
+  }
+
+  // --- Render ---
+  function renderDiary() {
+    diaryList.innerHTML = '';
+    
+    if (diaryData.length === 0) {
+      diaryList.innerHTML = '<li style="text-align:center; color:#888; padding:30px;">기록된 음악이 없습니다. 🎵</li>';
+      pageInfo.textContent = "0 / 0";
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      return;
+    }
+
+    const totalPages = Math.ceil(diaryData.length / itemsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageData = diaryData.slice(start, end);
+
+    // 🎵 음악 관련 이모지만 사용 (요청사항 반영)
+    const stickers = ['🎧', '💿', '🎹', '🎸', '🎤', '🎼', '🥁', '🎷', '🎺', '📻'];
+
+    pageData.forEach((entry) => {
+      const li = document.createElement('li');
+      li.className = 'diary-entry';
+      
+      const dateObj = new Date(entry.date);
+      const dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+      const sticker = stickers[dateObj.getDate() % stickers.length];
+
+      li.innerHTML = `
+        <div class="entry-header">
+          <div class="entry-date-group">
+            <span class="date-sticker">${sticker}</span>
+            <span class="entry-date">${dateStr}</span>
+          </div>
+          <div class="action-btns">
+            <button class="icon-btn edit-btn" onclick="startEdit(${entry.id})">✎ EDIT</button>
+            <button class="icon-btn delete-btn" onclick="deleteEntry(${entry.id})">✖ DEL</button>
+          </div>
+        </div>
+        ${entry.note ? `<div class="entry-note">${entry.note}</div>` : ''}
+        <div class="entry-player">
+          ${entry.embed} 
+        </div>
+      `;
+      diaryList.appendChild(li);
+    });
+
+    pageInfo.textContent = `${currentPage} / ${totalPages}`;
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+  }
+
+  function changePage(step) {
+    currentPage += step;
+    renderDiary();
+  }
+
+  init();
+</script>
+</body>
+</html>

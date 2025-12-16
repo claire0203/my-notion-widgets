@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitsch Diet Planner</title>
+<style>
+  /* --- Theme: Kitsch & Pastel Blue --- */
+  :root {
+    --bg-color: transparent;
+    --main-color: #D7E8F7;
+    --accent-color: #90CAF9;
+    --accent-dark: #64B5F6;
+    --text-color: #546E7A;
+    --paper-bg: #ffffff;
+    --shadow: 0 4px 15px rgba(144, 202, 249, 0.2);
+    --font-stack: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    margin: 0; padding: 10px;
+    font-family: var(--font-stack);
+    display: flex; justify-content: center;
+    box-sizing: border-box;
+    color: var(--text-color);
+  }
+
+  /* 메인 컨테이너 */
+  .diet-card {
+    width: 100%; max-width: 500px; /* 가로형이라 조금 넓게 */
+    background: var(--main-color);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 4px solid #fff;
+    outline: 2px dashed #BBDEFB;
+    /* 높이 유동적 */
+    min-height: 400px; 
+    position: relative;
+    overflow: hidden; /* 내부 스크롤 제어 */
+  }
+
+  /* 헤더 */
+  header {
+    text-align: center; margin-bottom: 15px;
+  }
+  h1 {
+    font-size: 20px; color: #fff; text-transform: uppercase;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.1); margin: 0 0 10px 0;
+  }
+  
+  .week-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255,255,255,0.5); padding: 8px; border-radius: 12px;
+  }
+  .nav-btn {
+    background: #fff; border: none; border-radius: 50%; width: 28px; height: 28px;
+    cursor: pointer; color: var(--accent-dark); font-weight: bold; transition: 0.2s;
+  }
+  .nav-btn:hover { background: var(--accent-color); color: #fff; }
+  .current-week { font-size: 13px; font-weight: 700; color: #455A64; }
+
+  /* [수정됨] 요일 리스트 (가로 스크롤) */
+  .day-list {
+    display: flex; 
+    gap: 15px; /* 카드 간격 */
+    overflow-x: auto; /* 가로 스크롤 허용 */
+    padding-bottom: 15px; /* 스크롤바 공간 */
+    scroll-snap-type: x mandatory; /* 스크롤 딱딱 맞게 */
+  }
+  
+  /* 스크롤바 스타일 */
+  .day-list::-webkit-scrollbar { height: 6px; }
+  .day-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.8); border-radius: 10px; }
+  .day-list::-webkit-scrollbar-track { background: transparent; }
+
+  /* [수정됨] 개별 카드 스타일 */
+  .day-item {
+    min-width: 260px; /* 카드 고정 너비 */
+    background: var(--paper-bg);
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    border: 1px solid #E1F5FE;
+    display: flex; flex-direction: column;
+    scroll-snap-align: center; /* 스크롤 시 중앙 정렬 */
+  }
+
+  /* 날짜 헤더 */
+  .day-header {
+    padding: 15px;
+    background: #fff;
+    border-bottom: 1px dashed #E0E0E0;
+    border-radius: 16px 16px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  
+  .day-title { font-weight: 800; font-size: 16px; color: var(--text-color); }
+  .day-date { font-size: 12px; color: #90A4AE; margin-left: 5px; font-weight: normal; }
+  
+  /* 오늘 날짜 강조 */
+  .day-item.today { border: 2px solid var(--accent-color); transform: scale(1.02); }
+  .day-item.today .day-header { background: #E3F2FD; }
+  .day-item.today .day-title::before { content: 'TODAY'; display: block; font-size: 9px; color: var(--accent-dark); margin-bottom: 2px; }
+
+  /* 내용 영역 */
+  .day-content {
+    padding: 15px;
+    background: #FAFAFA;
+    border-radius: 0 0 16px 16px;
+    flex-grow: 1;
+  }
+
+  /* 습관 체크 섹션 */
+  .habit-section {
+    display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;
+    background: #fff; padding: 10px; border-radius: 10px; border: 1px solid #ECEFF1;
+  }
+  .habit-check {
+    display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; cursor: pointer;
+    user-select: none; position: relative;
+  }
+  .habit-check input { display: none; } 
+  .habit-icon {
+    width: 24px; height: 24px; border: 2px solid #CFD8DC; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; color: transparent;
+    transition: 0.2s; font-size: 14px;
+  }
+  .habit-check input:checked + .habit-icon {
+    background: var(--accent-color); border-color: var(--accent-color); color: #fff;
+  }
+  
+  /* 식단 입력 섹션 */
+  .meal-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .meal-label { font-size: 11px; font-weight: 800; color: #78909C; display: flex; justify-content: space-between; }
+  
+  .skip-label { font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 3px; color: #90A4AE; }
+  .skip-label input { margin: 0; }
+
+  .meal-input {
+    width: 100%; padding: 10px; border: 1px solid #CFD8DC; border-radius: 8px;
+    font-family: var(--font-stack); font-size: 13px; box-sizing: border-box; outline: none;
+    background: #fff; transition: 0.2s;
+  }
+  .meal-input:focus { border-color: var(--accent-color); }
+  
+  .meal-input.skipped {
+    background: #ECEFF1; color: #B0BEC5; text-decoration: line-through; pointer-events: none;
+  }
+
+  /* 저장 버튼 */
+  .save-btn {
+    width: 100%; padding: 12px; background: var(--accent-color); color: white;
+    border: none; border-radius: 10px; font-weight: 800; cursor: pointer; margin-top: 5px;
+    transition: 0.2s;
+  }
+  .save-btn:hover { background: var(--accent-dark); }
+
+  /* 로딩 표시 */
+  #loading { font-size: 11px; text-align: center; color: #fff; margin-bottom: 5px; height: 15px;}
+
+  /* 🎉 애니메이션 */
+  .confetti {
+    position: absolute; width: 8px; height: 8px; background: #FFD54F;
+    animation: pop 0.6s ease-out forwards; pointer-events: none; z-index: 10;
+  }
+  @keyframes pop {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="diet-card">
+  <header>
+    <h1>🥗 Weekly Diet</h1>
+    <div id="loading">Loading...</div>
+    <div class="week-nav">
+      <button class="nav-btn" onclick="changeWeek(-7)">‹</button>
+      <span class="current-week" id="weekRange">...</span>
+      <button class="nav-btn" onclick="changeWeek(7)">›</button>
+    </div>
+  </header>
+
+  <div class="day-list" id="dayList"></div>
+</div>
+
+<script>
+  // ===========================================
+  // 🔒 설정: 식단용 Bin ID를 입력하세요!
+  const DIET_BIN_ID = "6941866443b1c97be9f29930"; 
+  const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
+  // ===========================================
+
+  const API_URL = `https://api.jsonbin.io/v3/b/${DIET_BIN_ID}`;
+  let dietData = {}; 
+  let currentMonday = getMonday(new Date());
+
+  const dayListEl = document.getElementById('dayList');
+  const weekRangeEl = document.getElementById('weekRange');
+  const loading = document.getElementById('loading');
+
+  function init() {
+    loadData();
+  }
+
+  function showMsg(txt) { loading.textContent = txt; }
+
+  // 1. 데이터 불러오기
+  async function loadData() {
+    showMsg("Loading...");
+    try {
+      const res = await fetch(API_URL + '/latest', {
+        headers: { 'X-Master-Key': API_KEY }
+      });
+      const data = await res.json();
+      
+      if (data.record && data.record.diet_logs) {
+        dietData = data.record.diet_logs;
+      } else {
+        dietData = {};
+      }
+      
+      renderWeek();
+      showMsg("");
+    } catch (e) {
+      console.error(e);
+      showMsg("Error loading.");
+    }
+  }
+
+  // 2. 데이터 저장하기
+  async function saveData() {
+    showMsg("Saving...");
+    try {
+      await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify({ diet_logs: dietData }),
+      });
+      showMsg("Saved!");
+      setTimeout(() => showMsg(""), 1000);
+    } catch (e) {
+      console.error(e);
+      showMsg("Save Failed");
+    }
+  }
+
+  // 3. 이번주 렌더링 (가로형)
+  function renderWeek() {
+    dayListEl.innerHTML = '';
+    
+    const start = new Date(currentMonday);
+    const end = new Date(currentMonday);
+    end.setDate(end.getDate() + 6);
+
+    weekRangeEl.textContent = `${fmtDateShort(start)} - ${fmtDateShort(end)}`;
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(currentMonday);
+      d.setDate(d.getDate() + i);
+      const dateKey = d.toISOString().split('T')[0]; 
+      const dayName = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
+      const isToday = (dateKey === new Date().toISOString().split('T')[0]);
+
+      const dayData = dietData[dateKey] || {
+        breakfast: '', lunch: '', dinner: '',
+        skip_b: false, skip_l: false, skip_d: false,
+        habit_pill: false, habit_water: false
+      };
+
+      const div = document.createElement('div');
+      div.className = `day-item ${isToday ? 'today' : ''}`;
+      
+      // 문구 삭제 & 헤더 깔끔하게
+      div.innerHTML = `
+        <div class="day-header">
+          <span class="day-title">${dayName}</span>
+          <span class="day-date">${fmtDateShort(d)}</span>
+        </div>
+        <div class="day-content">
+          <div class="habit-section">
+            <label class="habit-check">
+              <input type="checkbox" onchange="updateHabit('${dateKey}', 'pill', this)" ${dayData.habit_pill ? 'checked' : ''}>
+              <div class="habit-icon">💊</div> 유산균
+            </label>
+            <div style="width:1px; background:#ECEFF1;"></div>
+            <label class="habit-check">
+              <input type="checkbox" onchange="updateHabit('${dateKey}', 'water', this)" ${dayData.habit_water ? 'checked' : ''}>
+              <div class="habit-icon">💧</div> 물 1.5L
+            </label>
+          </div>
+
+          <div class="meal-row">
+            <div class="meal-label">
+              <span>BREAKFAST</span>
+              <label class="skip-label">
+                <input type="checkbox" onchange="toggleSkip('${dateKey}', 'b', this)" ${dayData.skip_b ? 'checked' : ''}> SKIP
+              </label>
+            </div>
+            <input type="text" class="meal-input ${dayData.skip_b ? 'skipped' : ''}" 
+                   id="in_${dateKey}_b" value="${dayData.skip_b ? 'SKIPPED' : dayData.breakfast}" 
+                   placeholder="아침 식단">
+          </div>
+
+          <div class="meal-row">
+            <div class="meal-label">
+              <span>LUNCH</span>
+              <label class="skip-label">
+                <input type="checkbox" onchange="toggleSkip('${dateKey}', 'l', this)" ${dayData.skip_l ? 'checked' : ''}> SKIP
+              </label>
+            </div>
+            <input type="text" class="meal-input ${dayData.skip_l ? 'skipped' : ''}" 
+                   id="in_${dateKey}_l" value="${dayData.skip_l ? 'SKIPPED' : dayData.lunch}" 
+                   placeholder="점심 식단">
+          </div>
+
+          <div class="meal-row">
+            <div class="meal-label">
+              <span>DINNER</span>
+              <label class="skip-label">
+                <input type="checkbox" onchange="toggleSkip('${dateKey}', 'd', this)" ${dayData.skip_d ? 'checked' : ''}> SKIP
+              </label>
+            </div>
+            <input type="text" class="meal-input ${dayData.skip_d ? 'skipped' : ''}" 
+                   id="in_${dateKey}_d" value="${dayData.skip_d ? 'SKIPPED' : dayData.dinner}" 
+                   placeholder="저녁 식단">
+          </div>
+
+          <button class="save-btn" onclick="saveDay('${dateKey}')">SAVE LOG</button>
+        </div>
+      `;
+      dayListEl.appendChild(div);
+    }
+    
+    // 오늘 날짜로 자동 스크롤
+    setTimeout(() => {
+        const todayEl = document.querySelector('.day-item.today');
+        if(todayEl) {
+            todayEl.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        }
+    }, 100);
+  }
+
+  // 4. 기능 함수들
+  window.changeWeek = function(offset) {
+    currentMonday.setDate(currentMonday.getDate() + offset);
+    renderWeek();
+  }
+
+  window.saveDay = function(dateKey) {
+    if (!dietData[dateKey]) dietData[dateKey] = {};
+    
+    const b_in = document.getElementById(`in_${dateKey}_b`);
+    const l_in = document.getElementById(`in_${dateKey}_l`);
+    const d_in = document.getElementById(`in_${dateKey}_d`);
+
+    if(!dietData[dateKey].skip_b) dietData[dateKey].breakfast = b_in.value;
+    if(!dietData[dateKey].skip_l) dietData[dateKey].lunch = l_in.value;
+    if(!dietData[dateKey].skip_d) dietData[dateKey].dinner = d_in.value;
+
+    saveData();
+  }
+
+  window.toggleSkip = function(dateKey, type, checkbox) {
+    if (!dietData[dateKey]) dietData[dateKey] = {};
+    
+    const key = `skip_${type}`; 
+    dietData[dateKey][key] = checkbox.checked;
+
+    const input = document.getElementById(`in_${dateKey}_${type}`);
+    if (checkbox.checked) {
+      input.classList.add('skipped');
+      input.value = "SKIPPED";
+    } else {
+      input.classList.remove('skipped');
+      const mealKey = (type === 'b') ? 'breakfast' : (type === 'l') ? 'lunch' : 'dinner';
+      input.value = dietData[dateKey][mealKey] || "";
+    }
+  }
+
+  window.updateHabit = function(dateKey, type, checkbox) {
+    if (!dietData[dateKey]) dietData[dateKey] = {};
+    
+    const key = `habit_${type}`;
+    dietData[dateKey][key] = checkbox.checked;
+
+    if (checkbox.checked) {
+      triggerConfetti(checkbox.nextElementSibling);
+    }
+    
+    saveData();
+  }
+
+  function triggerConfetti(element) {
+    const rect = element.getBoundingClientRect();
+    const colors = ['#FFD54F', '#4FC3F7', '#81C784', '#F06292'];
+    
+    for (let i = 0; i < 15; i++) {
+      const conf = document.createElement('div');
+      conf.className = 'confetti';
+      conf.style.left = rect.left + 'px';
+      conf.style.top = rect.top + 'px';
+      conf.style.background = colors[Math.floor(Math.random() * colors.length)];
+      
+      const tx = (Math.random() - 0.5) * 100 + 'px';
+      const ty = (Math.random() - 1) * 100 + 'px';
+      conf.style.setProperty('--tx', tx);
+      conf.style.setProperty('--ty', ty);
+      
+      document.body.appendChild(conf);
+      setTimeout(() => conf.remove(), 600);
+    }
+  }
+
+  function getMonday(d) {
+    d = new Date(d);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+  }
+  
+  function fmtDateShort(d) {
+    return `${d.getMonth()+1}.${d.getDate()}`;
+  }
+
+  init();
+</script>
+</body>
+</html>

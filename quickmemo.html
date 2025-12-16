@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pastel Quick Memo</title>
+<style>
+  /* --- Kitsch & Pastel Theme --- */
+  :root {
+    --bg-color: transparent;
+    --main-color: #D7E8F7; /* 파스텔 블루 */
+    --accent-color: #90CAF9; /* 진한 파스텔 블루 */
+    --text-color: #546E7A;
+    --paper-bg: #ffffff;
+    --pin-color: #FFB74D; /* 고정핀 색상 (파스텔 오렌지) */
+    --shadow: 0 4px 15px rgba(144, 202, 249, 0.25);
+    --font-stack: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    margin: 0; padding: 10px;
+    font-family: var(--font-stack);
+    display: flex; justify-content: center;
+    box-sizing: border-box;
+    overflow: hidden; /* 스크롤바 숨김 (깔끔하게) */
+  }
+
+  /* 전체 컨테이너 */
+  .memo-widget {
+    width: 100%; max-width: 320px;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  /* 1. 토글 버튼 (접혀있을 때 보이는 부분) */
+  .toggle-bar {
+    background: var(--main-color);
+    padding: 12px 20px;
+    border-radius: 25px;
+    color: #fff;
+    font-weight: 800;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    display: flex; justify-content: space-between; align-items: center;
+    border: 3px solid #fff;
+    transition: transform 0.2s;
+    user-select: none;
+  }
+  .toggle-bar:hover { transform: scale(1.02); background: var(--accent-color); }
+  .toggle-icon { font-size: 18px; }
+
+  /* 2. 메모장 본체 (펼쳐지는 부분) */
+  .memo-body {
+    background: var(--paper-bg);
+    border-radius: 20px;
+    margin-top: 10px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 2px solid var(--main-color);
+    display: none; /* 기본 숨김 */
+    flex-direction: column;
+    animation: slideDown 0.3s ease-out;
+    max-height: 400px; /* 너무 길어지지 않게 */
+  }
+  
+  /* 활성화 시 보임 */
+  .memo-widget.active .memo-body { display: flex; }
+  .memo-widget.active .toggle-bar { background: var(--accent-color); }
+  .memo-widget.active .toggle-icon { transform: rotate(180deg); }
+
+  /* 입력창 */
+  .input-group {
+    display: flex; gap: 8px; margin-bottom: 15px;
+  }
+  input {
+    flex: 1; padding: 10px; border: 2px solid #E1F5FE; border-radius: 12px;
+    outline: none; font-family: var(--font-stack); font-size: 13px; color: var(--text-color);
+    background: #FAFAFA;
+  }
+  input:focus { border-color: var(--accent-color); background: #fff; }
+  
+  button#addBtn {
+    background: var(--accent-color); color: white; border: none;
+    width: 36px; height: 36px; border-radius: 12px; cursor: pointer;
+    font-size: 18px; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* 메모 리스트 (스크롤 가능) */
+  .memo-list {
+    list-style: none; padding: 0; margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+    /* 스크롤바 커스텀 */
+    scrollbar-width: thin;
+    scrollbar-color: #CFD8DC transparent;
+  }
+  .memo-list::-webkit-scrollbar { width: 4px; }
+  .memo-list::-webkit-scrollbar-thumb { background-color: #CFD8DC; border-radius: 4px; }
+
+  /* 개별 메모 아이템 */
+  .memo-item {
+    padding: 10px;
+    border-bottom: 1px dashed #ECEFF1;
+    display: flex; flex-direction: column; gap: 4px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .memo-item:last-child { border-bottom: none; }
+  .memo-item:hover { background: #FAFAFA; border-radius: 8px; }
+
+  /* 고정된 메모 스타일 */
+  .memo-item.pinned {
+    background: #FFF8E1; /* 연한 노랑 배경 */
+    border-radius: 8px;
+    border: 1px solid #FFE082;
+    margin-bottom: 5px;
+  }
+
+  .meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; color: #B0BEC5; font-weight: 600;
+  }
+
+  .content-row {
+    font-size: 13px; color: var(--text-color); line-height: 1.4;
+    word-break: break-all;
+  }
+
+  /* 액션 버튼들 (핀, 삭제) */
+  .actions {
+    display: flex; gap: 5px; opacity: 0.5; transition: opacity 0.2s;
+  }
+  .memo-item:hover .actions { opacity: 1; }
+  
+  .icon-btn {
+    cursor: pointer; border: none; background: none; padding: 2px;
+    font-size: 14px; transition: transform 0.1s;
+  }
+  .icon-btn:hover { transform: scale(1.2); }
+  
+  .btn-pin { color: #CFD8DC; }
+  .memo-item.pinned .btn-pin { color: var(--pin-color); } /* 고정되면 색상 변경 */
+  
+  .btn-del { color: #EF9A9A; }
+
+  #loading {
+    font-size: 11px; text-align: center; color: #ccc; margin-top: 5px; height: 15px;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="memo-widget" id="widget">
+  <div class="toggle-bar" onclick="toggleWidget()">
+    <span>☁️ Quick Memo</span>
+    <span class="toggle-icon">▼</span>
+  </div>
+
+  <div class="memo-body">
+    <div class="input-group">
+      <input type="text" id="memoInput" placeholder="지금 무슨 생각 중인가요?" onkeypress="handleEnter(event)">
+      <button id="addBtn" onclick="addMemo()">+</button>
+    </div>
+    
+    <div id="loading"></div>
+    <ul class="memo-list" id="memoList">
+      </ul>
+  </div>
+</div>
+
+<script>
+  // ===========================================
+  // 🔒 설정: 새로 만든 Bin ID를 넣어주세요!
+  const MEMO_BIN_ID = "69417e4243b1c97be9f289a2"; 
+  const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
+  // ===========================================
+
+  const API_URL = `https://api.jsonbin.io/v3/b/${MEMO_BIN_ID}`;
+  let memoData = [];
+  const widget = document.getElementById('widget');
+  const loading = document.getElementById('loading');
+
+  // 위젯 펴기/접기 토글
+  function toggleWidget() {
+    widget.classList.toggle('active');
+    // 펼칠 때 데이터 로드 (처음 한 번만 하거나 매번 하거나 선택 가능)
+    if(widget.classList.contains('active') && memoData.length === 0) {
+      loadMemos();
+    }
+  }
+
+  function showMsg(txt) { loading.textContent = txt; }
+
+  // 1. 데이터 불러오기
+  async function loadMemos() {
+    showMsg("Loading...");
+    try {
+      const res = await fetch(API_URL + '/latest', {
+        headers: { 'X-Master-Key': API_KEY }
+      });
+      const data = await res.json();
+      
+      // 데이터 구조 체크
+      if (data.record && data.record.memos) {
+        memoData = data.record.memos;
+      } else if (Array.isArray(data.record)) {
+        memoData = data.record;
+      } else {
+        memoData = [];
+      }
+      
+      renderList();
+      showMsg("");
+    } catch (e) {
+      console.error(e);
+      showMsg("Error loading.");
+    }
+  }
+
+  // 2. 서버 저장하기 (공통 함수)
+  async function saveToServer() {
+    showMsg("Saving...");
+    try {
+      await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify({ memos: memoData }), // { memos: [...] } 구조 유지
+      });
+      showMsg("Saved!");
+      setTimeout(() => showMsg(""), 1000);
+    } catch (e) {
+      console.error(e);
+      showMsg("Save failed.");
+    }
+  }
+
+  // 3. 메모 추가
+  async function addMemo() {
+    const input = document.getElementById('memoInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const now = new Date();
+    const dateStr = `${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+    const timeStr = now.toTimeString().substring(0, 5); // HH:mm
+
+    const newMemo = {
+      id: Date.now(),
+      text: text,
+      date: dateStr,
+      time: timeStr,
+      isPinned: false // 기본은 고정 안 함
+    };
+
+    memoData.unshift(newMemo); // 맨 위에 추가
+    input.value = '';
+    
+    renderList();
+    await saveToServer();
+  }
+
+  // 4. 고정(Pin) 토글
+  async function togglePin(id) {
+    const index = memoData.findIndex(m => m.id === id);
+    if (index === -1) return;
+
+    // 상태 반전
+    memoData[index].isPinned = !memoData[index].isPinned;
+    
+    renderList(); // 화면 즉시 반영 (정렬 포함)
+    await saveToServer();
+  }
+
+  // 5. 삭제
+  async function deleteMemo(id) {
+    if (!confirm("삭제할까요?")) return;
+    memoData = memoData.filter(m => m.id !== id);
+    renderList();
+    await saveToServer();
+  }
+
+  // 엔터키 입력 지원
+  function handleEnter(e) {
+    if(e.key === 'Enter') addMemo();
+  }
+
+  // 6. 렌더링 (고정된 메모 상단 배치)
+  function renderList() {
+    const listEl = document.getElementById('memoList');
+    listEl.innerHTML = '';
+
+    // 정렬 로직: 고정된(isPinned=true) 것이 무조건 위로
+    const sortedData = [...memoData].sort((a, b) => {
+      if (a.isPinned === b.isPinned) return 0; // 둘 다 같으면 순서 유지 (최신순)
+      return a.isPinned ? -1 : 1; // a가 핀이면 앞으로(-1)
+    });
+
+    if (sortedData.length === 0) {
+      listEl.innerHTML = '<li style="text-align:center; color:#ccc; padding:20px;">No memos yet ☁️</li>';
+      return;
+    }
+
+    sortedData.forEach(item => {
+      const li = document.createElement('li');
+      li.className = `memo-item ${item.isPinned ? 'pinned' : ''}`;
+      
+      li.innerHTML = `
+        <div class="meta-row">
+          <span>${item.date} ${item.time}</span>
+          <div class="actions">
+            <button class="icon-btn btn-pin" onclick="togglePin(${item.id})" title="고정하기">📌</button>
+            <button class="icon-btn btn-del" onclick="deleteMemo(${item.id})" title="삭제">✖</button>
+          </div>
+        </div>
+        <div class="content-row">${item.text}</div>
+      `;
+      listEl.appendChild(li);
+    });
+  }
+
+  // 시작 시에는 닫혀있는 상태. 
+  // 원하면 loadMemos()를 여기서 호출해서 미리 로딩해둘 수도 있음.
+</script>
+</body>
+</html>

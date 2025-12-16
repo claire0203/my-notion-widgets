@@ -28,16 +28,17 @@
 
   /* 메인 컨테이너 */
   .diet-card {
-    width: 100%; max-width: 550px; /* 가로형이라 넓게 */
+    width: 100%; max-width: 500px; /* 가로형이라 조금 넓게 */
     background: var(--main-color);
     border-radius: 20px;
     padding: 20px;
     box-shadow: var(--shadow);
     border: 4px solid #fff;
     outline: 2px dashed #BBDEFB;
-    min-height: 420px; 
+    /* 높이 유동적 */
+    min-height: 400px; 
     position: relative;
-    overflow: hidden; 
+    overflow: hidden; /* 내부 스크롤 제어 */
   }
 
   /* 헤더 */
@@ -52,7 +53,6 @@
   .week-nav {
     display: flex; justify-content: space-between; align-items: center;
     background: rgba(255,255,255,0.5); padding: 8px; border-radius: 12px;
-    max-width: 300px; margin: 0 auto;
   }
   .nav-btn {
     background: #fff; border: none; border-radius: 50%; width: 28px; height: 28px;
@@ -61,20 +61,21 @@
   .nav-btn:hover { background: var(--accent-color); color: #fff; }
   .current-week { font-size: 13px; font-weight: 700; color: #455A64; }
 
-  /* 가로 스크롤 리스트 */
+  /* [수정됨] 요일 리스트 (가로 스크롤) */
   .day-list {
     display: flex; 
-    gap: 15px; 
-    overflow-x: auto; 
-    padding-bottom: 15px; 
-    scroll-snap-type: x mandatory; 
+    gap: 15px; /* 카드 간격 */
+    overflow-x: auto; /* 가로 스크롤 허용 */
+    padding-bottom: 15px; /* 스크롤바 공간 */
+    scroll-snap-type: x mandatory; /* 스크롤 딱딱 맞게 */
   }
   
+  /* 스크롤바 스타일 */
   .day-list::-webkit-scrollbar { height: 6px; }
   .day-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.8); border-radius: 10px; }
   .day-list::-webkit-scrollbar-track { background: transparent; }
 
-  /* 개별 카드 */
+  /* [수정됨] 개별 카드 스타일 */
   .day-item {
     min-width: 260px; /* 카드 고정 너비 */
     background: var(--paper-bg);
@@ -82,7 +83,7 @@
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     border: 1px solid #E1F5FE;
     display: flex; flex-direction: column;
-    scroll-snap-align: center; 
+    scroll-snap-align: center; /* 스크롤 시 중앙 정렬 */
   }
 
   /* 날짜 헤더 */
@@ -110,7 +111,7 @@
     flex-grow: 1;
   }
 
-  /* 습관 체크 */
+  /* 습관 체크 섹션 */
   .habit-section {
     display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;
     background: #fff; padding: 10px; border-radius: 10px; border: 1px solid #ECEFF1;
@@ -129,7 +130,7 @@
     background: var(--accent-color); border-color: var(--accent-color); color: #fff;
   }
   
-  /* 식단 입력 */
+  /* 식단 입력 섹션 */
   .meal-row { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
   .meal-label { font-size: 11px; font-weight: 800; color: #78909C; display: flex; justify-content: space-between; }
   
@@ -147,6 +148,7 @@
     background: #ECEFF1; color: #B0BEC5; text-decoration: line-through; pointer-events: none;
   }
 
+  /* 저장 버튼 */
   .save-btn {
     width: 100%; padding: 12px; background: var(--accent-color); color: white;
     border: none; border-radius: 10px; font-weight: 800; cursor: pointer; margin-top: 5px;
@@ -154,6 +156,7 @@
   }
   .save-btn:hover { background: var(--accent-dark); }
 
+  /* 로딩 표시 */
   #loading { font-size: 11px; text-align: center; color: #fff; margin-bottom: 5px; height: 15px;}
 
   /* 🎉 애니메이션 */
@@ -186,10 +189,8 @@
 
 <script>
   // ===========================================
-  // 1️⃣ 아까 만든 '새 Bin ID'를 여기에 붙여넣으세요! (따옴표 유지)
+  // 🔒 설정: 식단용 Bin ID를 입력하세요!
   const DIET_BIN_ID = "6941866443b1c97be9f29930"; 
-  
-  // 2️⃣ API Key는 아까 주신 걸로 채워뒀습니다! (수정 X)
   const API_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
   // ===========================================
 
@@ -207,14 +208,13 @@
 
   function showMsg(txt) { loading.textContent = txt; }
 
+  // 1. 데이터 불러오기
   async function loadData() {
     showMsg("Loading...");
     try {
       const res = await fetch(API_URL + '/latest', {
         headers: { 'X-Master-Key': API_KEY }
       });
-      if(!res.ok) throw new Error("API 오류: Bin ID를 확인해주세요!");
-
       const data = await res.json();
       
       if (data.record && data.record.diet_logs) {
@@ -227,10 +227,11 @@
       showMsg("");
     } catch (e) {
       console.error(e);
-      showMsg("로딩 실패: Bin ID를 확인하세요!");
+      showMsg("Error loading.");
     }
   }
 
+  // 2. 데이터 저장하기
   async function saveData() {
     showMsg("Saving...");
     try {
@@ -247,12 +248,14 @@
     }
   }
 
+  // 3. 이번주 렌더링 (가로형)
   function renderWeek() {
     dayListEl.innerHTML = '';
     
     const start = new Date(currentMonday);
     const end = new Date(currentMonday);
     end.setDate(end.getDate() + 6);
+
     weekRangeEl.textContent = `${fmtDateShort(start)} - ${fmtDateShort(end)}`;
 
     for (let i = 0; i < 7; i++) {
@@ -271,6 +274,7 @@
       const div = document.createElement('div');
       div.className = `day-item ${isToday ? 'today' : ''}`;
       
+      // 문구 삭제 & 헤더 깔끔하게
       div.innerHTML = `
         <div class="day-header">
           <span class="day-title">${dayName}</span>
@@ -331,13 +335,16 @@
       dayListEl.appendChild(div);
     }
     
-    // 오늘 날짜가 있으면 그쪽으로 스크롤 이동
+    // 오늘 날짜로 자동 스크롤
     setTimeout(() => {
         const todayEl = document.querySelector('.day-item.today');
-        if(todayEl) todayEl.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        if(todayEl) {
+            todayEl.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        }
     }, 100);
   }
 
+  // 4. 기능 함수들
   window.changeWeek = function(offset) {
     currentMonday.setDate(currentMonday.getDate() + offset);
     renderWeek();
@@ -345,6 +352,7 @@
 
   window.saveDay = function(dateKey) {
     if (!dietData[dateKey]) dietData[dateKey] = {};
+    
     const b_in = document.getElementById(`in_${dateKey}_b`);
     const l_in = document.getElementById(`in_${dateKey}_l`);
     const d_in = document.getElementById(`in_${dateKey}_d`);
@@ -358,7 +366,10 @@
 
   window.toggleSkip = function(dateKey, type, checkbox) {
     if (!dietData[dateKey]) dietData[dateKey] = {};
-    dietData[dateKey][`skip_${type}`] = checkbox.checked;
+    
+    const key = `skip_${type}`; 
+    dietData[dateKey][key] = checkbox.checked;
+
     const input = document.getElementById(`in_${dateKey}_${type}`);
     if (checkbox.checked) {
       input.classList.add('skipped');
@@ -372,24 +383,33 @@
 
   window.updateHabit = function(dateKey, type, checkbox) {
     if (!dietData[dateKey]) dietData[dateKey] = {};
-    dietData[dateKey][`habit_${type}`] = checkbox.checked;
-    if (checkbox.checked) triggerConfetti(checkbox.nextElementSibling);
+    
+    const key = `habit_${type}`;
+    dietData[dateKey][key] = checkbox.checked;
+
+    if (checkbox.checked) {
+      triggerConfetti(checkbox.nextElementSibling);
+    }
+    
     saveData();
   }
 
   function triggerConfetti(element) {
     const rect = element.getBoundingClientRect();
     const colors = ['#FFD54F', '#4FC3F7', '#81C784', '#F06292'];
+    
     for (let i = 0; i < 15; i++) {
       const conf = document.createElement('div');
       conf.className = 'confetti';
       conf.style.left = rect.left + 'px';
       conf.style.top = rect.top + 'px';
       conf.style.background = colors[Math.floor(Math.random() * colors.length)];
+      
       const tx = (Math.random() - 0.5) * 100 + 'px';
       const ty = (Math.random() - 1) * 100 + 'px';
       conf.style.setProperty('--tx', tx);
       conf.style.setProperty('--ty', ty);
+      
       document.body.appendChild(conf);
       setTimeout(() => conf.remove(), 600);
     }

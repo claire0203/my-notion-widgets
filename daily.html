@@ -16,30 +16,42 @@
             --p-yellow: #FAF3DD;
             --p-purple: #DBCDF0;
             --p-pink: #FFD1DC;
+            --p-orange: #FFDAB9;
         }
 
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .card { background: var(--card); border-radius: 20px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .card { background: var(--card); border-radius: 20px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.01); }
         
         /* Header */
         .header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: var(--p-blue); color: white; padding: 15px 20px; }
         .d-day-tag { background: rgba(255,255,255,0.3); padding: 5px 12px; border-radius: 12px; font-weight: 700; font-size: 14px; }
         
-        /* Carryover Card */
-        .carryover-section { background: var(--p-yellow); grid-column: span 2; border: 1px dashed #E6D5A9; }
-        .task-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #F0F0F0; font-size: 13px; }
-        .checkbox { width: 18px; height: 18px; border: 1.5px solid #D1D1D6; border-radius: 5px; cursor: pointer; }
+        /* Urgent Section (Carryover) */
+        .urgent-section { background: var(--p-orange); grid-column: span 2; border: 1px solid #FFCCAA; }
+        .section-title { font-size: 14px; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+
+        /* Task Item */
+        .task-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #F0F0F0; font-size: 13px; }
+        .checkbox { width: 18px; height: 18px; border: 1.5px solid #D1D1D6; border-radius: 5px; cursor: pointer; flex-shrink: 0; }
         .task-item.done .checkbox { background: var(--accent); border-color: var(--accent); }
         .task-item.done span { text-decoration: line-through; color: var(--sub-text); }
+        .task-text { flex-grow: 1; cursor: pointer; }
+        
+        .action-btns { display: flex; gap: 5px; opacity: 0.5; transition: opacity 0.2s; }
+        .task-item:hover .action-btns { opacity: 1; }
+        .edit-btn { background: none; border: none; color: var(--sub-text); cursor: pointer; font-size: 11px; }
+        .del-btn { background: none; border: none; color: #FF6B6B; cursor: pointer; font-size: 11px; }
 
         /* Timer UI */
         .timer-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 14px; margin-bottom: 8px; background: #FDFDFD; border-left: 5px solid var(--p-blue); }
         .timer-btn { border: none; padding: 6px 12px; border-radius: 10px; cursor: pointer; font-size: 12px; background: var(--p-blue); color: white; font-weight: 600; }
         
-        /* Buttons */
+        /* Footer Buttons */
         .btn-group { grid-column: span 2; display: flex; gap: 8px; }
-        .sub-btn { flex: 1; padding: 12px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; font-size: 12px; }
+        .sub-btn { flex: 1; padding: 12px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; font-size: 12px; color: #666; }
+
+        input { border:none; background:#F2F2F7; padding:12px; border-radius:12px; outline:none; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -47,7 +59,7 @@
 <div class="container">
     <div class="header card">
         <div>
-            <div style="font-weight: 800; font-size: 18px;">✨ Study OS</div>
+            <div style="font-weight: 800; font-size: 18px;">☁️ Study OS</div>
             <div id="today-date" style="font-size: 12px; opacity: 0.9; margin-top: 2px;"></div>
         </div>
         <div style="text-align: right;">
@@ -56,9 +68,9 @@
         </div>
     </div>
 
-    <div class="card carryover-section" id="carryover-card" style="display: none;">
-        <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">🚩 어제 완료하지 못한 우선 과제</div>
-        <div id="carryover-list"></div>
+    <div class="card urgent-section" id="urgent-card" style="display: none;">
+        <div class="section-title">🚨 어제 못다한 일 (급함!)</div>
+        <div id="urgent-list"></div>
     </div>
 
     <div class="card" style="grid-column: span 2;">
@@ -72,28 +84,28 @@
     </div>
 
     <div class="card">
-        <div style="font-size: 14px; font-weight: 700; margin-bottom: 15px;">🕒 몰입 타이머</div>
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: var(--accent);">🕒 몰입 타이머</div>
         <div class="timer-item"><span>📖 국어</span><span id="t-kor">00:00</span><button class="timer-btn" onclick="toggleT('kor')">Start</button></div>
         <div class="timer-item" style="border-left-color: var(--p-green);"><span>📐 수학</span><span id="t-math">00:00</span><button class="timer-btn" onclick="toggleT('math')">Start</button></div>
         <div class="timer-item" style="border-left-color: var(--p-purple);"><span>📜 역사</span><span id="t-hist">00:00</span><button class="timer-btn" onclick="toggleT('hist')">Start</button></div>
     </div>
 
     <div class="card">
-        <div style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">📊 학습 밸런스</div>
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--accent);">📊 학습 밸런스</div>
         <canvas id="balanceChart" style="max-height: 130px;"></canvas>
     </div>
 
     <div class="card" style="grid-column: span 2;">
+        <div class="section-title">📝 오늘의 로직 설계</div>
         <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-            <input type="text" id="task-in" style="flex:1; border:none; background:#F2F2F7; padding:12px; border-radius:12px; outline:none;" placeholder="오늘의 할 일을 입력하세요...">
-            <button class="timer-btn" onclick="addTask()">Add</button>
+            <input type="text" id="task-in" style="flex:1;" placeholder="새로운 할 일을 추가하세요..." onkeypress="if(event.keyCode==13) addTask()">
+            <button class="timer-btn" onclick="addTask()">추가</button>
         </div>
         <div id="task-list"></div>
     </div>
 
     <div class="btn-group">
-        <button class="sub-btn" style="background: var(--p-green);" onclick="showHistory()">📅 누적 기록</button>
-        <button class="sub-btn" style="background: var(--p-yellow);" onclick="simulateNextDay()">🧪 이월 기능 시뮬레이션</button>
+        <button class="sub-btn" style="background: var(--p-green);" onclick="showHistory()">📅 누적 기록 확인</button>
         <button class="sub-btn" style="background: var(--p-pink);" onclick="resetTimers()">🔄 타이머 리셋</button>
     </div>
 </div>
@@ -115,29 +127,15 @@
         } catch(e) { console.error(e); }
     }
 
-    // 날짜 변경 감지 및 이월 로직
     function checkDayChange() {
         const today = new Date().toLocaleDateString('ko-KR');
         if (state.lastDate !== today && state.lastDate !== "") {
-            // 1. 히스토리에 기록 저장
             state.history.push({ date: state.lastDate, timers: {...state.timers} });
-            // 2. 미완료 Task 이월
-            state.carryover = state.tasks.filter(t => !t.done).map(t => t.text);
-            // 3. 오늘 데이터 초기화
+            state.carryover = [...state.carryover, ...state.tasks.filter(t => !t.done).map(t => t.text)];
             state.tasks = [];
             state.timers = {kor:0, math:0, hist:0};
         }
         state.lastDate = today;
-    }
-
-    // 이월 기능 시뮬레이션 버튼 (테스트용)
-    function simulateNextDay() {
-        if(confirm("이월 기능을 테스트하시겠습니까? (미완료 항목이 '어제 못다한 일'로 이동하고 타이머가 초기화됩니다)")) {
-            state.lastDate = "2020. 01. 01"; // 강제로 과거 날짜로 변경
-            checkDayChange();
-            renderAll();
-            uploadData();
-        }
     }
 
     async function uploadData() {
@@ -156,20 +154,23 @@
     }
 
     function updateDDay() {
-        const target = new Date('2026-11-12'); // 2027학년도 수능일
-        const diff = Math.ceil((target - new Date()) / (1000*60*60*24));
+        const diff = Math.ceil((new Date('2026-11-12') - new Date()) / (1000*60*60*24));
         document.getElementById('d-day-display').innerText = `2027 수능 D-${diff}`;
     }
 
+    // 이월 리스트 렌더링
     function renderCarryover() {
-        const div = document.getElementById('carryover-list');
-        const card = document.getElementById('carryover-card');
+        const div = document.getElementById('urgent-list');
+        const card = document.getElementById('urgent-card');
         if (state.carryover.length === 0) { card.style.display = 'none'; return; }
         card.style.display = 'block';
         div.innerHTML = state.carryover.map((t, i) => `
             <div class="task-item">
                 <div class="checkbox" onclick="finishCarryover(${i})"></div>
-                <span style="font-weight:600; color:#8A7B50;">[이월] ${t}</span>
+                <span class="task-text" onclick="editCarryover(${i})"><b>[이월]</b> ${t}</span>
+                <div class="action-btns">
+                    <button class="del-btn" onclick="deleteCarryover(${i})">삭제</button>
+                </div>
             </div>
         `).join('');
     }
@@ -180,6 +181,14 @@
         renderAll(); uploadData();
     }
 
+    function deleteCarryover(i) { if(confirm("이월된 과제를 삭제할까요?")) { state.carryover.splice(i,1); renderAll(); uploadData(); } }
+    
+    function editCarryover(i) {
+        const newVal = prompt("수정할 내용을 입력하세요:", state.carryover[i]);
+        if(newVal) { state.carryover[i] = newVal; renderAll(); uploadData(); }
+    }
+
+    // 타이머 로직
     function toggleT(s) {
         if (intervals[s]) { clearInterval(intervals[s]); intervals[s] = null; uploadData(); }
         else {
@@ -197,6 +206,7 @@
         });
     }
 
+    // 오늘 태스크 로직
     function addTask() {
         const input = document.getElementById('task-in');
         if (!input.value.trim()) return;
@@ -209,7 +219,10 @@
         list.innerHTML = state.tasks.map((t, i) => `
             <div class="task-item ${t.done?'done':''}">
                 <div class="checkbox" onclick="toggleTask(${i})"></div>
-                <span>${t.text}</span>
+                <span class="task-text" onclick="editTask(${i})">${t.text}</span>
+                <div class="action-btns">
+                    <button class="del-btn" onclick="deleteTask(${i})">삭제</button>
+                </div>
             </div>
         `).join('');
         const done = state.tasks.filter(t => t.done).length;
@@ -219,6 +232,14 @@
     }
 
     function toggleTask(i) { state.tasks[i].done = !state.tasks[i].done; renderAll(); uploadData(); }
+    
+    function deleteTask(i) { if(confirm("이 과제를 삭제할까요?")) { state.tasks.splice(i,1); renderAll(); uploadData(); } }
+
+    function editTask(i) {
+        const newVal = prompt("수정할 내용을 입력하세요:", state.tasks[i].text);
+        if(newVal) { state.tasks[i].text = newVal; renderAll(); uploadData(); }
+    }
+
     function resetTimers() { if(confirm("타이머를 초기화할까요?")) { state.timers = {kor:0, math:0, hist:0}; renderAll(); uploadData(); } }
     function showHistory() { alert(state.history.length ? state.history.map(h=>`${h.date}: ${Math.floor(h.timers.math/60)}분(수학)`).join('\n') : "기록이 없습니다."); }
 

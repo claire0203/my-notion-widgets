@@ -7,160 +7,158 @@
     <style>
         :root {
             --bg: #F8F9FB;
-            --accent: #AEC6CF; /* 파스텔 블루 */
+            --accent: #AEC6CF;
             --card: #FFFFFF;
             --text: #5D5D5F;
             --sub-text: #9BA4B4;
-            /* 파스텔 팔레트 */
-            --p-pink: #FFD1DC;
             --p-blue: #B3CEE5;
             --p-green: #B2E2D2;
             --p-yellow: #FAF3DD;
             --p-purple: #DBCDF0;
+            --p-pink: #FFD1DC;
         }
 
-        body {
-            font-family: -apple-system, "SF Pro KR", sans-serif;
-            background-color: var(--bg); color: var(--text);
-            margin: 0; padding: 15px; display: flex; justify-content: center;
-        }
-
-        .container {
-            width: 100%; max-width: 900px;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-        }
-
-        .card {
-            background: var(--card); border-radius: 20px; padding: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.01);
-        }
-
-        .header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: var(--p-blue); color: white; }
-        .d-day-tag { background: rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 10px; font-weight: 700; font-size: 13px; }
-
-        /* 타이머 & 차트 */
-        .timer-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px; border-radius: 12px; margin-bottom: 8px; background: #FDFDFD;
-            border-left: 5px solid var(--p-blue);
-        }
-        .time-display { font-family: monospace; font-size: 15px; font-weight: 700; color: var(--text); }
-        .timer-btn { border: none; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 11px; background: var(--p-blue); color: white; }
-        .reset-btn { background: var(--p-pink); margin-left: 5px; }
-
-        /* 이월된 Task (Carryover) */
-        .carryover-section { background: var(--p-yellow); border: none; }
-        .task-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #F0F0F0; font-size: 13px; }
-        .checkbox { width: 16px; height: 16px; border: 1.5px solid #D1D1D6; border-radius: 4px; cursor: pointer; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .card { background: var(--card); border-radius: 20px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        
+        /* Header */
+        .header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: var(--p-blue); color: white; padding: 15px 20px; }
+        .d-day-tag { background: rgba(255,255,255,0.3); padding: 5px 12px; border-radius: 12px; font-weight: 700; font-size: 14px; }
+        
+        /* Carryover Card */
+        .carryover-section { background: var(--p-yellow); grid-column: span 2; border: 1px dashed #E6D5A9; }
+        .task-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #F0F0F0; font-size: 13px; }
+        .checkbox { width: 18px; height: 18px; border: 1.5px solid #D1D1D6; border-radius: 5px; cursor: pointer; }
         .task-item.done .checkbox { background: var(--accent); border-color: var(--accent); }
         .task-item.done span { text-decoration: line-through; color: var(--sub-text); }
 
-        /* 히스토리 버튼 */
-        .history-btn { background: var(--p-green); grid-column: span 2; padding: 12px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; color: #555; }
-
-        /* Progress Bar */
-        .progress-bg { width: 100%; height: 8px; background: #EFEFEF; border-radius: 4px; overflow: hidden; margin-top: 5px; }
-        .progress-fill { height: 100%; background: var(--p-blue); width: 0%; transition: width 0.3s; }
-
-        input { border: none; background: #F2F2F7; padding: 10px; border-radius: 10px; width: 70%; outline: none; font-size: 12px; }
-        .save-footer { grid-column: span 2; text-align: center; padding: 10px; font-size: 11px; color: var(--sub-text); }
+        /* Timer UI */
+        .timer-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 14px; margin-bottom: 8px; background: #FDFDFD; border-left: 5px solid var(--p-blue); }
+        .timer-btn { border: none; padding: 6px 12px; border-radius: 10px; cursor: pointer; font-size: 12px; background: var(--p-blue); color: white; font-weight: 600; }
+        
+        /* Buttons */
+        .btn-group { grid-column: span 2; display: flex; gap: 8px; }
+        .sub-btn { flex: 1; padding: 12px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header card">
-        <div style="font-weight: 700; display: flex; align-items: center; gap: 5px;">✨ Study OS <span id="sync-status" style="font-size: 10px; font-weight: 400; opacity: 0.8;">(Synced)</span></div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-            <div id="today-date" style="font-size: 11px;"></div>
-            <div class="d-day-tag" id="d-day">D-Day</div>
+        <div>
+            <div style="font-weight: 800; font-size: 18px;">✨ Study OS</div>
+            <div id="today-date" style="font-size: 12px; opacity: 0.9; margin-top: 2px;"></div>
+        </div>
+        <div style="text-align: right;">
+            <div id="sync-status" style="font-size: 10px; opacity: 0.8; margin-bottom: 4px;">Synced</div>
+            <div class="d-day-tag" id="d-day-display">D-Day</div>
         </div>
     </div>
 
-    <div class="card carryover-section" id="carryover-card" style="display: none; grid-column: span 2;">
-        <div style="font-size: 12px; font-weight: 700; margin-bottom: 8px;">🚩 어제 못다한 일 (이월됨)</div>
+    <div class="card carryover-section" id="carryover-card" style="display: none;">
+        <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">🚩 어제 완료하지 못한 우선 과제</div>
         <div id="carryover-list"></div>
     </div>
 
     <div class="card" style="grid-column: span 2;">
-        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600;">
-            <span>오늘의 시스템 가동률</span>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 5px;">
+            <span>오늘의 시스템 달성률</span>
             <span id="progress-text">0%</span>
         </div>
-        <div class="progress-bg"><div class="progress-fill" id="progress-bar"></div></div>
+        <div style="width: 100%; height: 8px; background: #EEE; border-radius: 4px; overflow: hidden;">
+            <div id="progress-bar" style="height: 100%; background: var(--p-blue); width: 0%; transition: width 0.3s;"></div>
+        </div>
     </div>
 
     <div class="card">
-        <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">🕒 몰입 타이머</div>
-        <div class="timer-item"><span style="font-size: 11px;">📖 국어</span><span class="time-display" id="t-kor">00:00</span><button class="timer-btn" onclick="toggleT('kor')">Start</button></div>
-        <div class="timer-item" style="border-left-color: var(--p-green);"><span style="font-size: 11px;">📐 수학</span><span class="time-display" id="t-math">00:00</span><button class="timer-btn" onclick="toggleT('math')">Start</button></div>
-        <div class="timer-item" style="border-left-color: var(--p-purple);"><span style="font-size: 11px;">📜 역사</span><span class="time-display" id="t-hist">00:00</span><button class="timer-btn" onclick="toggleT('hist')">Start</button></div>
-        <button class="timer-btn reset-btn" style="width:100%;" onclick="resetTimers()">타이머 초기화</button>
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 15px;">🕒 몰입 타이머</div>
+        <div class="timer-item"><span>📖 국어</span><span id="t-kor">00:00</span><button class="timer-btn" onclick="toggleT('kor')">Start</button></div>
+        <div class="timer-item" style="border-left-color: var(--p-green);"><span>📐 수학</span><span id="t-math">00:00</span><button class="timer-btn" onclick="toggleT('math')">Start</button></div>
+        <div class="timer-item" style="border-left-color: var(--p-purple);"><span>📜 역사</span><span id="t-hist">00:00</span><button class="timer-btn" onclick="toggleT('hist')">Start</button></div>
     </div>
 
     <div class="card">
-        <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">📊 학습 밸런스</div>
-        <canvas id="balanceChart" style="max-height: 120px;"></canvas>
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">📊 학습 밸런스</div>
+        <canvas id="balanceChart" style="max-height: 130px;"></canvas>
     </div>
 
     <div class="card" style="grid-column: span 2;">
-        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <input type="text" id="task-in" placeholder="오늘의 로직 추가...">
+        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <input type="text" id="task-in" style="flex:1; border:none; background:#F2F2F7; padding:12px; border-radius:12px; outline:none;" placeholder="오늘의 할 일을 입력하세요...">
             <button class="timer-btn" onclick="addTask()">Add</button>
         </div>
         <div id="task-list"></div>
     </div>
 
-    <button class="history-btn" onclick="showHistory()">📅 지난 기록 누적 확인 (히스토리)</button>
-    
-    <div class="save-footer">모든 데이터는 JSONBin 클라우드에 실시간 백업됩니다 ☁️</div>
+    <div class="btn-group">
+        <button class="sub-btn" style="background: var(--p-green);" onclick="showHistory()">📅 누적 기록</button>
+        <button class="sub-btn" style="background: var(--p-yellow);" onclick="simulateNextDay()">🧪 이월 기능 시뮬레이션</button>
+        <button class="sub-btn" style="background: var(--p-pink);" onclick="resetTimers()">🔄 타이머 리셋</button>
+    </div>
 </div>
 
 <script>
     const MASTER_KEY = "$2a$10$7/urvzV65WS3eRC9dhD4Pe5dDs/W2TYnytNLMFjLA3Tst3JXORJwO";
     const BIN_ID = "69a6fb7cae596e708f5b5af0";
     
-    let state = {
-        tasks: [], carryover: [], timers: {kor:0, math:0, hist:0},
-        history: [], lastDate: ""
-    };
+    let state = { tasks: [], carryover: [], timers: {kor:0, math:0, hist:0}, history: [], lastDate: "" };
     let intervals = {kor:null, math:null, hist:null}, chart;
 
     async function downloadData() {
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: {"X-Master-Key": MASTER_KEY}});
             const data = await res.json();
-            const today = new Date().toLocaleDateString();
             state = data.record;
-
-            // 날짜 변경 감지 -> 이월 및 히스토리 저장
-            if (state.lastDate !== today && state.lastDate !== "") {
-                state.history.push({ date: state.lastDate, timers: {...state.timers} });
-                state.carryover = state.tasks.filter(t => !t.done).map(t => t.text);
-                state.tasks = [];
-                state.timers = {kor:0, math:0, hist:0};
-            }
-            state.lastDate = today;
+            checkDayChange();
             renderAll();
         } catch(e) { console.error(e); }
     }
 
+    // 날짜 변경 감지 및 이월 로직
+    function checkDayChange() {
+        const today = new Date().toLocaleDateString('ko-KR');
+        if (state.lastDate !== today && state.lastDate !== "") {
+            // 1. 히스토리에 기록 저장
+            state.history.push({ date: state.lastDate, timers: {...state.timers} });
+            // 2. 미완료 Task 이월
+            state.carryover = state.tasks.filter(t => !t.done).map(t => t.text);
+            // 3. 오늘 데이터 초기화
+            state.tasks = [];
+            state.timers = {kor:0, math:0, hist:0};
+        }
+        state.lastDate = today;
+    }
+
+    // 이월 기능 시뮬레이션 버튼 (테스트용)
+    function simulateNextDay() {
+        if(confirm("이월 기능을 테스트하시겠습니까? (미완료 항목이 '어제 못다한 일'로 이동하고 타이머가 초기화됩니다)")) {
+            state.lastDate = "2020. 01. 01"; // 강제로 과거 날짜로 변경
+            checkDayChange();
+            renderAll();
+            uploadData();
+        }
+    }
+
     async function uploadData() {
-        document.getElementById('sync-status').innerText = "(Syncing...)";
+        document.getElementById('sync-status').innerText = "Syncing...";
         await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
             method: "PUT", headers: {"Content-Type": "application/json", "X-Master-Key": MASTER_KEY},
             body: JSON.stringify(state)
         });
-        document.getElementById('sync-status').innerText = "(Synced)";
+        document.getElementById('sync-status').innerText = "Synced";
     }
 
     function renderAll() {
-        renderTasks();
-        renderCarryover();
-        updateTDisplay();
-        updateChart();
-        updateDDay();
+        renderTasks(); renderCarryover(); updateTDisplay(); updateChart();
         document.getElementById('today-date').innerText = state.lastDate;
+        updateDDay();
+    }
+
+    function updateDDay() {
+        const target = new Date('2026-11-12'); // 2027학년도 수능일
+        const diff = Math.ceil((target - new Date()) / (1000*60*60*24));
+        document.getElementById('d-day-display').innerText = `2027 수능 D-${diff}`;
     }
 
     function renderCarryover() {
@@ -171,7 +169,7 @@
         div.innerHTML = state.carryover.map((t, i) => `
             <div class="task-item">
                 <div class="checkbox" onclick="finishCarryover(${i})"></div>
-                <span style="font-weight:600;">[이월] ${t}</span>
+                <span style="font-weight:600; color:#8A7B50;">[이월] ${t}</span>
             </div>
         `).join('');
     }
@@ -199,8 +197,6 @@
         });
     }
 
-    function resetTimers() { if(confirm("모든 타이머를 0으로 초기화할까요?")) { state.timers = {kor:0, math:0, hist:0}; renderAll(); uploadData(); } }
-
     function addTask() {
         const input = document.getElementById('task-in');
         if (!input.value.trim()) return;
@@ -223,16 +219,8 @@
     }
 
     function toggleTask(i) { state.tasks[i].done = !state.tasks[i].done; renderAll(); uploadData(); }
-
-    function showHistory() {
-        const hist = state.history.map(h => `${h.date}: 국어 ${Math.floor(h.timers.kor/60)}분, 수학 ${Math.floor(h.timers.math/60)}분`).join('\n');
-        alert(hist || "누적된 기록이 아직 없습니다.");
-    }
-
-    function updateDDay() {
-        const diff = Math.ceil((new Date('2026-11-12') - new Date()) / (1000*60*60*24));
-        document.getElementById('d-day').innerText = `D-${diff}`;
-    }
+    function resetTimers() { if(confirm("타이머를 초기화할까요?")) { state.timers = {kor:0, math:0, hist:0}; renderAll(); uploadData(); } }
+    function showHistory() { alert(state.history.length ? state.history.map(h=>`${h.date}: ${Math.floor(h.timers.math/60)}분(수학)`).join('\n') : "기록이 없습니다."); }
 
     function initChart() {
         chart = new Chart(document.getElementById('balanceChart'), {
@@ -241,7 +229,6 @@
             options: { plugins: { legend: { display: false } }, cutout: '70%' }
         });
     }
-
     function updateChart() { chart.data.datasets[0].data = [state.timers.kor, state.timers.math, state.timers.hist]; chart.update(); }
 
     initChart(); downloadData();

@@ -6,169 +6,114 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg: #f5f7fa;
-            --accent: #007AFF;
-            --card: #ffffff;
-            --text: #1d1d1f;
-            --sub-text: #86868b;
-            --p-blue: #e3f2fd;
-            --p-green: #e8f5e9;
-            --p-orange: #fff3e0;
+            --bg: #F8F9FB;
+            --accent: #AEC6CF; /* 파스텔 블루 */
+            --card: #FFFFFF;
+            --text: #5D5D5F;
+            --sub-text: #9BA4B4;
+            /* 파스텔 팔레트 */
+            --p-pink: #FFD1DC;
+            --p-blue: #B3CEE5;
+            --p-green: #B2E2D2;
+            --p-yellow: #FAF3DD;
+            --p-purple: #DBCDF0;
         }
 
         body {
             font-family: -apple-system, "SF Pro KR", sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0; padding: 20px;
-            display: flex; justify-content: center;
+            background-color: var(--bg); color: var(--text);
+            margin: 0; padding: 15px; display: flex; justify-content: center;
         }
 
         .container {
-            width: 100%; max-width: 1000px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto 1fr auto;
-            gap: 15px;
+            width: 100%; max-width: 900px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
         }
 
-        /* 공통 카드 스타일 */
         .card {
-            background: var(--card);
-            border-radius: 20px;
-            padding: 18px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border: 1px solid rgba(0,0,0,0.02);
+            background: var(--card); border-radius: 20px; padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.01);
         }
 
-        /* Header: D-Day & Status */
-        .header {
-            grid-column: span 2;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .d-day-tag {
-            background: var(--accent); color: white;
-            padding: 5px 12px; border-radius: 12px;
-            font-weight: 700; font-size: 14px;
-        }
+        .header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: var(--p-blue); color: white; }
+        .d-day-tag { background: rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 10px; font-weight: 700; font-size: 13px; }
 
-        /* Progress Bar */
-        .progress-section { grid-column: span 2; }
-        .progress-bg {
-            width: 100%; height: 10px; background: #e5e5ea;
-            border-radius: 5px; margin-top: 8px; overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%; background: var(--accent);
-            width: 0%; transition: width 0.5s ease;
-        }
-
-        /* Subject Timers */
-        .timer-grid { display: flex; flex-direction: column; gap: 10px; }
+        /* 타이머 & 차트 */
         .timer-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 12px; border-radius: 14px; background: var(--bg);
+            padding: 10px; border-radius: 12px; margin-bottom: 8px; background: #FDFDFD;
+            border-left: 5px solid var(--p-blue);
         }
-        .timer-label { font-size: 13px; font-weight: 600; }
-        .time-display { font-family: monospace; font-size: 16px; font-weight: 700; }
-        .timer-btn {
-            background: var(--accent); color: white; border: none;
-            padding: 5px 10px; border-radius: 8px; font-size: 11px; cursor: pointer;
-        }
-        .timer-btn.running { background: #ff3b30; }
+        .time-display { font-family: monospace; font-size: 15px; font-weight: 700; color: var(--text); }
+        .timer-btn { border: none; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 11px; background: var(--p-blue); color: white; }
+        .reset-btn { background: var(--p-pink); margin-left: 5px; }
 
-        /* Donut Chart Section */
-        .chart-container { display: flex; justify-content: center; align-items: center; }
-        canvas { max-width: 180px !important; max-height: 180px !important; }
-
-        /* Task List */
-        .task-list { max-height: 250px; overflow-y: auto; }
-        .task-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 0; border-bottom: 1px solid #f2f2f7; font-size: 13px;
-        }
-        .checkbox { width: 18px; height: 18px; border: 1.5px solid #d1d1d6; border-radius: 5px; cursor: pointer; }
+        /* 이월된 Task (Carryover) */
+        .carryover-section { background: var(--p-yellow); border: none; }
+        .task-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #F0F0F0; font-size: 13px; }
+        .checkbox { width: 16px; height: 16px; border: 1.5px solid #D1D1D6; border-radius: 4px; cursor: pointer; }
         .task-item.done .checkbox { background: var(--accent); border-color: var(--accent); }
         .task-item.done span { text-decoration: line-through; color: var(--sub-text); }
 
-        /* Input & Save */
-        .input-group { display: flex; gap: 8px; margin-bottom: 15px; }
-        input { flex: 1; border: none; background: #f2f2f7; padding: 10px; border-radius: 10px; outline: none; }
-        .save-btn {
-            grid-column: span 2; background: #5856d6; color: white;
-            border: none; padding: 15px; border-radius: 15px;
-            font-weight: 700; cursor: pointer;
-        }
+        /* 히스토리 버튼 */
+        .history-btn { background: var(--p-green); grid-column: span 2; padding: 12px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; color: #555; }
 
-        /* Insight Section */
-        .rating-stars { display: flex; gap: 5px; color: #ffcc00; cursor: pointer; font-size: 20px; }
-        .insight-text { font-size: 11px; color: var(--sub-text); margin-top: 10px; line-height: 1.4; }
+        /* Progress Bar */
+        .progress-bg { width: 100%; height: 8px; background: #EFEFEF; border-radius: 4px; overflow: hidden; margin-top: 5px; }
+        .progress-fill { height: 100%; background: var(--p-blue); width: 0%; transition: width 0.3s; }
+
+        input { border: none; background: #F2F2F7; padding: 10px; border-radius: 10px; width: 70%; outline: none; font-size: 12px; }
+        .save-footer { grid-column: span 2; text-align: center; padding: 10px; font-size: 11px; color: var(--sub-text); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header card">
-        <div>
-            <span style="font-weight: 700; font-size: 18px;"> Study OS</span>
-            <span style="font-size: 12px; color: var(--sub-text); margin-left: 10px;" id="today-date"></span>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <div id="sync-status" style="font-size: 10px; color: var(--accent);">Synced</div>
-            <div class="d-day-tag" id="d-day">D-700</div>
+        <div style="font-weight: 700; display: flex; align-items: center; gap: 5px;">✨ Study OS <span id="sync-status" style="font-size: 10px; font-weight: 400; opacity: 0.8;">(Synced)</span></div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <div id="today-date" style="font-size: 11px;"></div>
+            <div class="d-day-tag" id="d-day">D-Day</div>
         </div>
     </div>
 
-    <div class="progress-section card">
-        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600;">
-            <span>오늘의 시스템 달성률</span>
+    <div class="card carryover-section" id="carryover-card" style="display: none; grid-column: span 2;">
+        <div style="font-size: 12px; font-weight: 700; margin-bottom: 8px;">🚩 어제 못다한 일 (이월됨)</div>
+        <div id="carryover-list"></div>
+    </div>
+
+    <div class="card" style="grid-column: span 2;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600;">
+            <span>오늘의 시스템 가동률</span>
             <span id="progress-text">0%</span>
         </div>
         <div class="progress-bg"><div class="progress-fill" id="progress-bar"></div></div>
     </div>
 
     <div class="card">
-        <div style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: var(--accent);">🕒 몰입 타이머</div>
-        <div class="timer-grid">
-            <div class="timer-item" style="border-left: 4px solid #007AFF;">
-                <span class="timer-label">📖 국어(언매)</span>
-                <span class="time-display" id="time-kor">00:00:00</span>
-                <button class="timer-btn" onclick="toggleTimer('kor')">Start</button>
-            </div>
-            <div class="timer-item" style="border-left: 4px solid #34C759;">
-                <span class="timer-label">📐 수학(기하)</span>
-                <span class="time-display" id="time-math">00:00:00</span>
-                <button class="timer-btn" onclick="toggleTimer('math')">Start</button>
-            </div>
-            <div class="timer-item" style="border-left: 4px solid #AF52DE;">
-                <span class="timer-label">📜 쌍사(역사)</span>
-                <span class="time-display" id="time-hist">00:00:00</span>
-                <button class="timer-btn" onclick="toggleTimer('hist')">Start</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="card chart-container">
-        <canvas id="balanceChart"></canvas>
+        <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">🕒 몰입 타이머</div>
+        <div class="timer-item"><span style="font-size: 11px;">📖 국어</span><span class="time-display" id="t-kor">00:00</span><button class="timer-btn" onclick="toggleT('kor')">Start</button></div>
+        <div class="timer-item" style="border-left-color: var(--p-green);"><span style="font-size: 11px;">📐 수학</span><span class="time-display" id="t-math">00:00</span><button class="timer-btn" onclick="toggleT('math')">Start</button></div>
+        <div class="timer-item" style="border-left-color: var(--p-purple);"><span style="font-size: 11px;">📜 역사</span><span class="time-display" id="t-hist">00:00</span><button class="timer-btn" onclick="toggleT('hist')">Start</button></div>
+        <button class="timer-btn reset-btn" style="width:100%;" onclick="resetTimers()">타이머 초기화</button>
     </div>
 
     <div class="card">
-        <div class="input-group">
-            <input type="text" id="task-input" placeholder="할 일 추가..." onkeypress="if(event.keyCode==13) addTask()">
+        <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">📊 학습 밸런스</div>
+        <canvas id="balanceChart" style="max-height: 120px;"></canvas>
+    </div>
+
+    <div class="card" style="grid-column: span 2;">
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="task-in" placeholder="오늘의 로직 추가...">
             <button class="timer-btn" onclick="addTask()">Add</button>
         </div>
-        <div class="task-list" id="task-list"></div>
+        <div id="task-list"></div>
     </div>
 
-    <div class="card">
-        <div style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">🧠 집중도 지수</div>
-        <div class="rating-stars" id="star-rating">
-            <span onclick="setRating(1)">★</span><span onclick="setRating(2)">★</span><span onclick="setRating(3)">★</span><span onclick="setRating(4)">★</span><span onclick="setRating(5)">★</span>
-        </div>
-        <div class="insight-text" id="insight-msg">데이터가 충분하지 않습니다. 학습을 시작하세요.</div>
-    </div>
-
-    <button class="save-btn" onclick="uploadData()">☁️ Save All System Data</button>
+    <button class="history-btn" onclick="showHistory()">📅 지난 기록 누적 확인 (히스토리)</button>
+    
+    <div class="save-footer">모든 데이터는 JSONBin 클라우드에 실시간 백업됩니다 ☁️</div>
 </div>
 
 <script>
@@ -176,157 +121,130 @@
     const BIN_ID = "69a6fb7cae596e708f5b5af0";
     
     let state = {
-        tasks: [],
-        timers: { kor: 0, math: 0, hist: 0 },
-        rating: 0,
-        lastUpdated: new Date().toLocaleDateString()
+        tasks: [], carryover: [], timers: {kor:0, math:0, hist:0},
+        history: [], lastDate: ""
     };
+    let intervals = {kor:null, math:null, hist:null}, chart;
 
-    let intervals = { kor: null, math: null, hist: null };
-    let chart;
-
-    // 1. D-Day 계산 (2027 수능 예성일: 2026-11-12)
-    function updateDDay() {
-        const target = new Date('2026-11-12');
-        const now = new Date();
-        const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
-        document.getElementById('d-day').innerText = `D-${diff}`;
-    }
-
-    // 2. 타이머 로직
-    function toggleTimer(subject) {
-        const btn = event.target;
-        if (intervals[subject]) {
-            clearInterval(intervals[subject]);
-            intervals[subject] = null;
-            btn.innerText = "Start";
-            btn.classList.remove('running');
-            uploadData();
-        } else {
-            // 다른 타이머 중지 (몰입 분산 방지)
-            Object.keys(intervals).forEach(s => {
-                if (intervals[s]) toggleTimer(s); 
-            });
-            intervals[subject] = setInterval(() => {
-                state.timers[subject]++;
-                updateTimerDisplay();
-                updateChart();
-            }, 1000);
-            btn.innerText = "Stop";
-            btn.classList.add('running');
-        }
-    }
-
-    function updateTimerDisplay() {
-        ['kor', 'math', 'hist'].forEach(s => {
-            const h = Math.floor(state.timers[s] / 3600).toString().padStart(2, '0');
-            const m = Math.floor((state.timers[s] % 3600) / 60).toString().padStart(2, '0');
-            const sec = (state.timers[s] % 60).toString().padStart(2, '0');
-            document.getElementById(`time-${s}`).innerText = `${h}:${m}:${sec}`;
-        });
-    }
-
-    // 3. 차트 로직
-    function initChart() {
-        const ctx = document.getElementById('balanceChart').getContext('2d');
-        chart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['국어', '수학', '역사'],
-                datasets: [{
-                    data: [1, 1, 1],
-                    backgroundColor: ['#007AFF', '#34C759', '#AF52DE'],
-                    borderWidth: 0
-                }]
-            },
-            options: { cutout: '70%', plugins: { legend: { display: false } } }
-        });
-    }
-
-    function updateChart() {
-        chart.data.datasets[0].data = [state.timers.kor, state.timers.math, state.timers.hist];
-        chart.update();
-        updateInsights();
-    }
-
-    // 4. 상관관계 및 인사이트
-    function updateInsights() {
-        const total = state.timers.kor + state.timers.math + state.timers.hist;
-        let msg = "오늘의 시스템 밸런스: ";
-        if (total === 0) msg += "학습 데이터 수집 중...";
-        else if (state.timers.math / total > 0.6) msg += "수학 몰입도가 매우 높습니다. 뇌 과부하 주의!";
-        else if (state.rating >= 4 && total > 10800) msg += "완벽한 시스템 가동 중! 이 컨디션을 유지하세요.";
-        else msg += "안정적인 흐름입니다.";
-        document.getElementById('insight-msg').innerText = msg;
-    }
-
-    // 5. 클라우드 동기화 (JSONBin)
     async function downloadData() {
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: { "X-Master-Key": MASTER_KEY } });
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: {"X-Master-Key": MASTER_KEY}});
             const data = await res.json();
-            if (data.record.lastUpdated === new Date().toLocaleDateString()) {
-                state = data.record;
+            const today = new Date().toLocaleDateString();
+            state = data.record;
+
+            // 날짜 변경 감지 -> 이월 및 히스토리 저장
+            if (state.lastDate !== today && state.lastDate !== "") {
+                state.history.push({ date: state.lastDate, timers: {...state.timers} });
+                state.carryover = state.tasks.filter(t => !t.done).map(t => t.text);
+                state.tasks = [];
+                state.timers = {kor:0, math:0, hist:0};
             }
-            renderTasks();
-            updateTimerDisplay();
-            updateChart();
-            setRating(state.rating);
-            updateDDay();
-        } catch (e) { console.error(e); }
+            state.lastDate = today;
+            renderAll();
+        } catch(e) { console.error(e); }
     }
 
     async function uploadData() {
-        document.getElementById('sync-status').innerText = "Syncing...";
-        try {
-            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
-                body: JSON.stringify(state)
-            });
-            document.getElementById('sync-status').innerText = "Synced";
-        } catch (e) { document.getElementById('sync-status').innerText = "Error"; }
+        document.getElementById('sync-status').innerText = "(Syncing...)";
+        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+            method: "PUT", headers: {"Content-Type": "application/json", "X-Master-Key": MASTER_KEY},
+            body: JSON.stringify(state)
+        });
+        document.getElementById('sync-status').innerText = "(Synced)";
     }
 
-    // 6. 기타 UI 기능 (Task, Rating)
+    function renderAll() {
+        renderTasks();
+        renderCarryover();
+        updateTDisplay();
+        updateChart();
+        updateDDay();
+        document.getElementById('today-date').innerText = state.lastDate;
+    }
+
+    function renderCarryover() {
+        const div = document.getElementById('carryover-list');
+        const card = document.getElementById('carryover-card');
+        if (state.carryover.length === 0) { card.style.display = 'none'; return; }
+        card.style.display = 'block';
+        div.innerHTML = state.carryover.map((t, i) => `
+            <div class="task-item">
+                <div class="checkbox" onclick="finishCarryover(${i})"></div>
+                <span style="font-weight:600;">[이월] ${t}</span>
+            </div>
+        `).join('');
+    }
+
+    function finishCarryover(i) {
+        const task = state.carryover.splice(i, 1)[0];
+        state.tasks.unshift({ text: task, done: true });
+        renderAll(); uploadData();
+    }
+
+    function toggleT(s) {
+        if (intervals[s]) { clearInterval(intervals[s]); intervals[s] = null; uploadData(); }
+        else {
+            Object.keys(intervals).forEach(k => { if(intervals[k]) toggleT(k); });
+            intervals[s] = setInterval(() => { state.timers[s]++; updateTDisplay(); updateChart(); }, 1000);
+        }
+        renderAll();
+    }
+
+    function updateTDisplay() {
+        ['kor','math','hist'].forEach(s => {
+            const m = Math.floor(state.timers[s]/60).toString().padStart(2,'0');
+            const sec = (state.timers[s]%60).toString().padStart(2,'0');
+            document.getElementById(`t-${s}`).innerText = `${m}:${sec}`;
+        });
+    }
+
+    function resetTimers() { if(confirm("모든 타이머를 0으로 초기화할까요?")) { state.timers = {kor:0, math:0, hist:0}; renderAll(); uploadData(); } }
+
     function addTask() {
-        const input = document.getElementById('task-input');
+        const input = document.getElementById('task-in');
         if (!input.value.trim()) return;
         state.tasks.push({ text: input.value, done: false });
-        input.value = "";
-        renderTasks();
-        uploadData();
+        input.value = ""; renderAll(); uploadData();
     }
 
     function renderTasks() {
         const list = document.getElementById('task-list');
-        list.innerHTML = "";
-        let doneCount = 0;
-        state.tasks.forEach((t, i) => {
-            if (t.done) doneCount++;
-            const div = document.createElement('div');
-            div.className = `task-item ${t.done ? 'done' : ''}`;
-            div.innerHTML = `<div class="checkbox" onclick="toggleTask(${i})"></div><span>${t.text}</span>`;
-            list.appendChild(div);
+        list.innerHTML = state.tasks.map((t, i) => `
+            <div class="task-item ${t.done?'done':''}">
+                <div class="checkbox" onclick="toggleTask(${i})"></div>
+                <span>${t.text}</span>
+            </div>
+        `).join('');
+        const done = state.tasks.filter(t => t.done).length;
+        const p = state.tasks.length ? Math.round(done/state.tasks.length*100) : 0;
+        document.getElementById('progress-bar').style.width = p+'%';
+        document.getElementById('progress-text').innerText = p+'%';
+    }
+
+    function toggleTask(i) { state.tasks[i].done = !state.tasks[i].done; renderAll(); uploadData(); }
+
+    function showHistory() {
+        const hist = state.history.map(h => `${h.date}: 국어 ${Math.floor(h.timers.kor/60)}분, 수학 ${Math.floor(h.timers.math/60)}분`).join('\n');
+        alert(hist || "누적된 기록이 아직 없습니다.");
+    }
+
+    function updateDDay() {
+        const diff = Math.ceil((new Date('2026-11-12') - new Date()) / (1000*60*60*24));
+        document.getElementById('d-day').innerText = `D-${diff}`;
+    }
+
+    function initChart() {
+        chart = new Chart(document.getElementById('balanceChart'), {
+            type: 'doughnut',
+            data: { labels: ['국어', '수학', '역사'], datasets: [{ data: [1,1,1], backgroundColor: ['#B3CEE5', '#B2E2D2', '#DBCDF0'], borderWidth: 0 }]},
+            options: { plugins: { legend: { display: false } }, cutout: '70%' }
         });
-        const percent = state.tasks.length ? Math.round((doneCount / state.tasks.length) * 100) : 0;
-        document.getElementById('progress-bar').style.width = percent + "%";
-        document.getElementById('progress-text').innerText = percent + "%";
     }
 
-    function toggleTask(i) { state.tasks[i].done = !state.tasks[i].done; renderTasks(); uploadData(); }
+    function updateChart() { chart.data.datasets[0].data = [state.timers.kor, state.timers.math, state.timers.hist]; chart.update(); }
 
-    function setRating(r) {
-        state.rating = r;
-        const stars = document.getElementById('star-rating').children;
-        for (let i = 0; i < 5; i++) stars[i].style.color = i < r ? "#ffcc00" : "#d1d1d6";
-        uploadData();
-    }
-
-    // 초기화
-    document.getElementById('today-date').innerText = new Date().toLocaleDateString();
-    initChart();
-    downloadData();
+    initChart(); downloadData();
 </script>
 
 </body>
